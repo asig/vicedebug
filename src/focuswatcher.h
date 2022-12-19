@@ -17,21 +17,22 @@
  * along with vicedebug.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "mainwindow.h"
-#include "fonts.h"
-#include "controller.h"
+#pragma once
 
-#include <QApplication>
+#include <QObject>
 
-int main(int argc, char *argv[])
+namespace vicedebug {
+
+class FocusWatcher : public QObject
 {
-    QApplication a(argc, argv);
-    vicedebug::Fonts::init();
+    Q_OBJECT
+public:
+    explicit FocusWatcher(QObject *parent = nullptr);
+    virtual bool eventFilter(QObject *obj, QEvent *event) override;
 
-    vicedebug::ViceClient viceClient(nullptr);
-    vicedebug::Controller controller(&viceClient);
+signals:
+    void focusLost();
+    void focusAquired();
+};
 
-    vicedebug::MainWindow w(&controller, nullptr);
-    w.show();
-    return a.exec();
-}
+} // namespace vicedebug

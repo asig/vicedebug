@@ -1,3 +1,22 @@
+/*
+ * Copyright (c) 2022 Andreas Signer <asigner@gmail.com>
+ *
+ * This file is part of vicedebug.
+ *
+ * vicedebug is free software: you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * vicedebug is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with vicedebug.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #pragma once
 
 #include <QThread>
@@ -106,10 +125,15 @@ enum ResponseType {
 struct Response {
     std::uint8_t errorCode;
     std::uint32_t id;
+    ResponseType responseType;
 };
 
 struct MemGetResponse : public Response {
     std::vector<std::uint8_t> memory;
+};
+
+struct MemSetResponse : public Response {
+    // EMPTY
 };
 
 struct RegistersResponse : public Response {
@@ -125,31 +149,65 @@ struct RegistersAvailableResponse : public Response {
     std::map<std::uint8_t, RegInfo> regInfos;
 };
 
+struct CheckpointInfo {
+    std::uint32_t number;
+    bool hit;
+    std::uint16_t startAddress;
+    std::uint16_t endAddress;
+    bool stopWhenHit;
+    bool enabled;
+    std::uint8_t op; // 0x01: load, 0x02: store, 0x04: exec
+    bool isTemporary;
+    std::uint32_t hitCount;
+    std::uint32_t ignoreCount;
+    bool hasCondition;
+    std::uint8_t memspace;
+};
+
+struct CheckpointListResponse : public Response {
+    std::uint32_t nofCheckpoints;
+    std::vector<CheckpointInfo> checkpoints;
+};
+
+struct CheckpointInfoResponse : public Response {
+    CheckpointInfo checkpoint;
+};
+
+struct CheckpointDeleteResponse : public Response {
+    // EMPTY
+};
+
+struct CheckpointToggleResponse : public Response {
+    // EMPTY
+};
+
+struct ExitResponse : public Response {
+    // EMPTY
+};
+
+struct AdvanceInstructionsResponse : public Response {
+    // EMPTY
+};
+
+struct ExecuteUntilReturnResponse : public Response {
+    // EMPTY
+};
+
+struct BanksAvailableResponse : public Response {
+    std::map<std::uint16_t, std::string> banks;
+};
+
+struct StoppedResponse : public Response {
+    std::uint16_t pc;
+};
+
 class ResponseSetter {
 public:
     virtual ~ResponseSetter() {};
 
     virtual void set(std::shared_ptr<Response> response) = 0;
+    virtual bool responseIsComplete() = 0;
 };
-
-template<typename T>
-class ResponseSetterImpl : public ResponseSetter {
-public:
-    ResponseSetterImpl<T>(QPromise<T>* promise)
-        : promise_(promise) {}
-
-    void set(std::shared_ptr<Response> response) override {
-        promise_->addResult(*((T*)response.get()));
-        promise_->finish();
-        delete promise_;
-        promise_ = nullptr;
-        // TODO delete promise?
-    }
-
-private:
-    QPromise<T>* promise_;
-};
-
 
 class MessageCollector {
 public:
@@ -199,11 +257,15 @@ class ConnectionWorker : public QObject {
 public:
     ConnectionWorker(QObject* parent);
 
+    // This is a dirty hack so that we don't get deadlocks
+    // at connection time...
+    void reportOobResponses(bool enabled);
+
 signals:
     void oobResponseReceived(std::shared_ptr<Response> response);
 
 public slots:
-    void connectToHost(QString host, int port, QPromise<bool>* resultPromise);
+    void connectToHost(QString host, int port, int timeoutMs, QPromise<bool>* resultPromise);
     void disconnect();
     void sendCommand(std::uint8_t cmd, std::vector<std::uint8_t> body, ResponseSetter* resposnseSetter);
 
@@ -218,9 +280,14 @@ private:
 
     MessageCollector currentMessage_;
 
+    int reportOobStopped_;
+    std::vector<std::shared_ptr<Response>> unreportedOobs_;
+
     std::uint32_t nextID_;
     std::map<std::uint32_t, ResponseSetter*> outstandingRequests_;
     QTcpSocket socket_;
+
+    std::vector<CheckpointInfo> checkpointInfos;
 };
 
 }

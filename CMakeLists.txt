@@ -16,33 +16,35 @@ find_package(QT
     REQUIRED COMPONENTS
         Core
         Network
+        Test
         Widgets
 )
 find_package(Qt6
     REQUIRED COMPONENTS
         Core
         Network
+        Test
         Widgets
 )
 
 include_directories(src)
 
-set(PROJECT_SOURCES
+set(SHARED_SOURCES
         resources/resources.qrc
-        src/main.cpp
-        src/mainwindow.cpp
-        src/mainwindow.h
         src/fonts.h
         src/fonts.cpp
-        src/widgets/disassemblywidget.h
-        src/widgets/disassemblywidget.cpp
-        src/widgets/watcheswidget.h
-        src/widgets/watcheswidget.cpp
-        src/widgets/registerswidget.h
-        src/widgets/registerswidget.cpp
         src/widgets/breakpointswidget.h
         src/widgets/breakpointswidget.cpp
+        src/widgets/disassemblywidget.h
+        src/widgets/disassemblywidget.cpp
+        src/widgets/memorywidget.h
+        src/widgets/memorywidget.cpp
+        src/widgets/registerswidget.h
+        src/widgets/registerswidget.cpp
+        src/widgets/watcheswidget.h
+        src/widgets/watcheswidget.cpp
         src/machinestate.h
+        src/breakpoints.h
         src/viceclient.h
         src/viceclient.cpp
         src/connectionworker.h
@@ -51,30 +53,23 @@ set(PROJECT_SOURCES
         src/vectorutils.cpp
         src/controller.h
         src/controller.cpp
+        src/disassembler.h
+        src/disassembler.cpp
+        src/mainwindow.cpp
+        src/mainwindow.h        
+        src/focuswatcher.h
+        src/focuswatcher.cpp
 )
 
-if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
-    qt_add_executable(vicedebug
-        MANUAL_FINALIZATION
-        ${PROJECT_SOURCES}
-    )
-# Define target properties for Android with Qt 6 as:
-#    set_property(TARGET vicedebug APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
-#                 ${CMAKE_CURRENT_SOURCE_DIR}/android)
-# For more information, see https://doc.qt.io/qt-6/qt-add-executable.html#target-creation
-else()
-    if(ANDROID)
-        add_library(vicedebug SHARED
-            ${PROJECT_SOURCES}
-        )
-# Define properties for Android with Qt 5 after find_package() calls as:
-#    set(ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android")
-    else()
-        add_executable(vicedebug
-            ${PROJECT_SOURCES}
-        )
-    endif()
-endif()
+set(PROJECT_SOURCES
+        src/main.cpp
+)
+
+qt_add_executable(vicedebug
+    MANUAL_FINALIZATION
+    ${PROJECT_SOURCES}
+    ${SHARED_SOURCES}
+)
 
 target_link_libraries(vicedebug
     PRIVATE
@@ -95,6 +90,26 @@ install(TARGETS vicedebug
     BUNDLE DESTINATION .
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
-if(QT_VERSION_MAJOR EQUAL 6)
-    qt_finalize_executable(vicedebug)
-endif()
+qt_finalize_executable(vicedebug)
+
+
+#
+# TESTS
+#
+enable_testing(true)
+
+qt_add_executable(disassembler_test
+    MANUAL_FINALIZATION
+    test/disassembler_test.cpp
+    ${SHARED_SOURCES}
+)
+add_test(NAME disassembler_test COMMAND disassembler_test)
+
+target_link_libraries(disassembler_test
+    PRIVATE
+        Qt${QT_VERSION_MAJOR}::Core
+        Qt${QT_VERSION_MAJOR}::Network
+        Qt${QT_VERSION_MAJOR}::Widgets
+        Qt${QT_VERSION_MAJOR}::Test
+)
+qt_finalize_executable(disassembler_test)

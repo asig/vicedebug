@@ -17,21 +17,29 @@
  * along with vicedebug.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "mainwindow.h"
-#include "fonts.h"
-#include "controller.h"
+#pragma once
 
-#include <QApplication>
+#include <string>
+#include <vector>
+#include <cstdint>
 
-int main(int argc, char *argv[])
-{
-    QApplication a(argc, argv);
-    vicedebug::Fonts::init();
+namespace vicedebug {
 
-    vicedebug::ViceClient viceClient(nullptr);
-    vicedebug::Controller controller(&viceClient);
+class Disassembler {
+public:
+    struct Line {
+        std::uint16_t addr;
+        std::vector<std::uint8_t> bytes;
+        std::string disassembly;
+    };
 
-    vicedebug::MainWindow w(&controller, nullptr);
-    w.show();
-    return a.exec();
+    Disassembler();
+
+    std::vector<Line> disassembleForward(std::uint16_t pos, const std::vector<std::uint8_t>& memory, int lines);
+    std::vector<Line> disassembleBackward(std::uint16_t pos, const std::vector<std::uint8_t>& memory, int lines);
+
+private:
+    Line disassembleLine(std::uint16_t& pos, const std::vector<std::uint8_t>& memory);
+};
+
 }

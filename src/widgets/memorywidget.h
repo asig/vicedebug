@@ -19,21 +19,27 @@
 
 #pragma once
 
-#include <QGroupBox>
-#include <QTreeWidget>
-#include <QToolButton>
+#include <map>
+
+#include <QPlainTextEdit>
+#include <QScrollBar>
 
 #include "controller.h"
 
 namespace vicedebug {
 
-class WatchesWidget : public QGroupBox
-{
+class MemoryWidget : public QWidget {
     Q_OBJECT
 
 public:
-    explicit WatchesWidget(Controller* controller, QWidget* parent);
-    ~WatchesWidget();
+    MemoryWidget(Controller* controller, QWidget* parent);
+    virtual ~MemoryWidget();
+
+protected:
+    void paintEvent(QPaintEvent* event) override;
+    void mousePressEvent(QMouseEvent* event) override;
+    void focusOutEvent(QFocusEvent* event) override;
+    void keyPressEvent(QKeyEvent* event) override;
 
 public slots:
     void onConnected(const MachineState& machineState, const Breakpoints& breakpoints);
@@ -44,14 +50,30 @@ public slots:
 
 private:
     void enableControls(bool enable);
-    void clearControls();
-    void fillControls(const MachineState& machineState);
+    void updateSize(int lines);
+
+    void maybeEnterNibbleEditMode(int x, int y);
+    void maybeEnterByteEditMode(int x, int y);
+
+    void moveCursorRight();
 
     Controller* controller_;
+    std::vector<std::uint8_t> memory_;
 
-    QTreeWidget* tree_;
-    QToolButton* addBtn_;
-    QToolButton* removeBtn_;
+    // Edit mode variables
+    bool editActive_;
+    bool nibbleMode_;
+    int cursorPos_; // nibble-offset into memory
+
+    // Widths of parts of the widget
+    int lineH_; // Height of a line
+    int ascent_;
+    int borderW_; // Left and right border
+    int addressW_; // Address part
+    int separatorW_; // Separator width between address and hex, as well as hex and text
+    int hexSpaceW_; // hex part
+    int textW_;
+    int charW_; // text part
 };
 
 }

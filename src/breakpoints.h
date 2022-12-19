@@ -17,21 +17,27 @@
  * along with vicedebug.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "mainwindow.h"
-#include "fonts.h"
-#include "controller.h"
+#pragma once
 
-#include <QApplication>
+#include <vector>
+#include <cstdint>
 
-int main(int argc, char *argv[])
-{
-    QApplication a(argc, argv);
-    vicedebug::Fonts::init();
+namespace vicedebug {
 
-    vicedebug::ViceClient viceClient(nullptr);
-    vicedebug::Controller controller(&viceClient);
+struct Breakpoint {
+    enum Type {
+        READ  = 1 << 0,
+        WRITE = 1 << 1,
+        EXEC  = 1 << 2
+    };
 
-    vicedebug::MainWindow w(&controller, nullptr);
-    w.show();
-    return a.exec();
+    std::uint32_t number;
+    std::uint8_t op;
+    std::uint16_t addrStart;
+    std::uint16_t addrEnd;
+    bool enabled;
+};
+
+typedef std::vector<Breakpoint> Breakpoints;
+
 }

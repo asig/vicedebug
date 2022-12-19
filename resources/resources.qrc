@@ -422,6 +422,5 @@
         <file>images/codicons/add.svg</file>
         <file>images/codicons/activate-breakpoints.svg</file>
         <file>images/codicons/account.svg</file>
-        <file>images/other_icons/connect.svg</file>
     </qresource>
 </RCC>
