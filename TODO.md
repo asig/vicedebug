@@ -22,6 +22,7 @@
 - [X] Add register modification
 
 ## Other stuff
+- [ ] Use different colors for icons in toolbar menu
 - [ ] Add "Connect" and "Quick connect" menu
 - [ ] Add About box
 - [ ] add sprite viewer (all sprites, currently active sprites)
