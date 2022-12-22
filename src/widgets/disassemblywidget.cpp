@@ -61,6 +61,13 @@ DisassemblyWidget::DisassemblyWidget(Controller* controller, QWidget* parent) :
     content_ = new DisassemblyContent(controller, this);
     setWidgetResizable(true);
     setWidget(content_);
+    setFont(Fonts::robotoMono());
+
+    connect(controller, &Controller::connected, this, [this]() { this->setEnabled(true);} );
+    connect(controller, &Controller::disconnected, this, [this]() { this->setEnabled(false);} );
+    connect(controller, &Controller::executionPaused, this, [this]() { this->setEnabled(true);} );
+    connect(controller, &Controller::executionResumed, this, [this]() { this->setEnabled(false);} );
+
 }
 
 DisassemblyWidget::~DisassemblyWidget() {
@@ -78,8 +85,6 @@ DisassemblyWidget::~DisassemblyWidget() {
 DisassemblyContent::DisassemblyContent(Controller* controller, QScrollArea* parent) :
     QWidget(parent), controller_(controller), mouseDown_(false), highlightedLine_(-1), scrollArea_(parent)
 {
-    setFont(Fonts::robotoMono());
-
     // Compute the size of the widget:
     QFontMetrics fm(Fonts::robotoMono());
     lineH_ = fm.height();
@@ -165,6 +170,7 @@ void DisassemblyContent::mouseReleaseEvent(QMouseEvent* event) {
 
 void DisassemblyContent::paintEvent(QPaintEvent* event) {
     QPainter painter(this);
+//    painter.setFont(Fonts::robotoMono());
     painter.setBackgroundMode(Qt::OpaqueMode);
 
     int firstLine = event->rect().top()/lineH_;
