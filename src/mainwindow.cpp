@@ -70,8 +70,9 @@ void MainWindow::createToolBar() {
 
     connectBtn_ = new QToolButton();
     connectBtn_->setCheckable(true);
-    connectBtn_->setText("Connect");    
-    connectBtn_->setIcon(QIcon(":/images/codicons/debug-disconnect.svg"));
+    connectBtn_->setText("Connect");
+    connectBtn_->setIcon(QIcon(":/images/other-icons/connected.svg"));
+    connectBtn_->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
     connect(connectBtn_, &QAbstractButton::clicked, this, &MainWindow::onConnectClicked);
 
     stepInBtn_ = new QToolButton();
@@ -197,21 +198,21 @@ void MainWindow::createMainUI() {
     lowerPart->setStretchFactor(2, 1);
 
 
-    MemoryWidget* memoryWdiget = new MemoryWidget(controller_, this);
-    QScrollArea* memoryWidgetScrollArea = new QScrollArea();
-    memoryWidgetScrollArea->setBackgroundRole(QPalette::Dark);
-    memoryWidgetScrollArea->setWidget(memoryWdiget);
-    memoryWidgetScrollArea->setWidgetResizable(true);
+    MemoryWidget* memoryWidget = new MemoryWidget(controller_, this);
+//    QScrollArea* memoryWidgetScrollArea = new QScrollArea();
+//    memoryWidgetScrollArea->setBackgroundRole(QPalette::Dark);
+//    memoryWidgetScrollArea->setWidget(memoryWdiget);
+//    memoryWidgetScrollArea->setWidgetResizable(true);
 
 //    QScrollArea* disassembltWidgetScrollArea = new QScrollArea();
 //    disassembltWidgetScrollArea->setBackgroundRole(QPalette::Dark);
 //    disassembly_ = new DisassemblyWidget(controller_, disassembltWidgetScrollArea);
 //    disassembltWidgetScrollArea->setWidget(disassembly_);
-    disassembly_ = new DisassemblyWidget(controller_, this);
+    DisassemblyWidget* disassembly = new DisassemblyWidget(controller_, this);
 
     QSplitter* upperPart = new QSplitter(Qt::Horizontal);
-    upperPart->addWidget(disassembly_);
-    upperPart->addWidget(memoryWidgetScrollArea);
+    upperPart->addWidget(disassembly);
+    upperPart->addWidget(memoryWidget);
 
 
     QSplitter* all = new QSplitter(Qt::Vertical);
@@ -265,6 +266,8 @@ void MainWindow::__DEBUG__Clicked() {
 void MainWindow::onConnected(const MachineState& machineState) {
     connectBtn_->setChecked(true);
     connectBtn_->setEnabled(true);
+    connectBtn_->setText("Disconnect");
+    connectBtn_->setIcon(QIcon(":/images/codicons/debug-disconnect.svg"));
     updateDebugControlButtons(false);
 }
 
@@ -276,6 +279,8 @@ void MainWindow::onConnectionFailed() {
 void MainWindow::onDisconnected() {
     connectBtn_->setChecked(false);
     connectBtn_->setEnabled(true);
+    connectBtn_->setText("Connect");
+    connectBtn_->setIcon(QIcon(":/images/other-icons/connected.svg"));
 
     stepInBtn_->setEnabled(false);
     stepOutBtn_->setEnabled(false);

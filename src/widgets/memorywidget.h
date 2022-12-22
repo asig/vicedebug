@@ -22,18 +22,35 @@
 #include <map>
 
 #include <QPlainTextEdit>
-#include <QScrollBar>
+#include <QScrollArea>
 
 #include "controller.h"
 
 namespace vicedebug {
 
-class MemoryWidget : public QWidget {
+class MemoryContent;
+
+
+class MemoryWidget : public QScrollArea {
     Q_OBJECT
 
 public:
     MemoryWidget(Controller* controller, QWidget* parent);
     virtual ~MemoryWidget();
+
+protected:
+//    void resizeEvent(QResizeEvent* event) override;
+
+private:
+    MemoryContent* content_;
+};
+
+class MemoryContent : public QWidget {
+    Q_OBJECT
+
+public:
+    MemoryContent(Controller* controller, QScrollArea* parent);
+    virtual ~MemoryContent();
 
 protected:
     void paintEvent(QPaintEvent* event) override;
@@ -57,7 +74,11 @@ private:
 
     void moveCursorRight();
 
+    void ensureCursorVisible();
+
     Controller* controller_;
+    QScrollArea* scrollArea_;
+
     std::vector<std::uint8_t> memory_;
 
     // Edit mode variables

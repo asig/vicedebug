@@ -47,10 +47,38 @@ QColor kFgDisabled = QColor(Qt::lightGray).lighter(80);
 
 }
 
+
 MemoryWidget::MemoryWidget(Controller* controller, QWidget* parent) :
-    QWidget(parent), controller_(controller)
-{
+    QScrollArea(parent) {
+
+    setBackgroundRole(QPalette::Dark);
+    content_ = new MemoryContent(controller, this);
+    setWidgetResizable(true);
+    setWidget(content_);
     setFont(Fonts::robotoMono());
+
+    connect(controller, &Controller::connected, this, [this]() { this->setEnabled(true);} );
+    connect(controller, &Controller::disconnected, this, [this]() { this->setEnabled(false);} );
+    connect(controller, &Controller::executionPaused, this, [this]() { this->setEnabled(true);} );
+    connect(controller, &Controller::executionResumed, this, [this]() { this->setEnabled(false);} );
+}
+
+MemoryWidget::~MemoryWidget() {
+}
+
+//void DisassemblyWidget::resizeEvent(QResizeEvent* event) {
+//    QSize vpSize = viewport()->size();
+//    QSize disassemblySize = widget()->size();
+//    int newW = std::max(vpSize.width(), widget()->sizeHint().width());
+//    disassemblySize.setWidth(newW);
+//    widget()->resize(disassemblySize);
+//}
+
+
+
+MemoryContent::MemoryContent(Controller* controller, QScrollArea* parent) :
+    QWidget(parent), controller_(controller), scrollArea_(parent)
+{
     setFocusPolicy(Qt::StrongFocus);
 
     // Compute the size of the widget:
@@ -63,36 +91,25 @@ MemoryWidget::MemoryWidget(Controller* controller, QWidget* parent) :
     hexSpaceW_ = fm.horizontalAdvance("00 ");
     charW_ = fm.horizontalAdvance("0");
 
-    qDebug() << "***" << fm.horizontalAdvance(QString("00 ")) << "***";
-//    qDebug() << "***" << QString("00 ").repeated(kBytesPerLine).trimmed() << "***";
-//    qDebug() << "***" << hexW_ << "***";
-
-    qDebug() << "WWWW : " << fm.horizontalAdvance("WWWW");
-    qDebug() << "WWWW : " << fm.size(Qt::TextSingleLine, "WWWW").width();
-    qDebug() << "0000 : " << fm.horizontalAdvance("0000");
-    qDebug() << "0000 : " << fm.size(Qt::TextSingleLine, "0000").width();
-    qDebug() << "     : " << fm.horizontalAdvance("    ");
-    qDebug() << "     : " << fm.size(Qt::TextSingleLine, "    ").width();
-
-    connect(controller_, &Controller::connected, this, &MemoryWidget::onConnected);
-    connect(controller_, &Controller::disconnected, this, &MemoryWidget::onDisconnected);
-    connect(controller_, &Controller::executionPaused, this, &MemoryWidget::onExecutionPaused);
-    connect(controller_, &Controller::executionResumed, this, &MemoryWidget::onExecutionResumed);
-    connect(controller_, &Controller::memoryChanged, this, &MemoryWidget::onMemoryChanged);
+    connect(controller_, &Controller::connected, this, &MemoryContent::onConnected);
+    connect(controller_, &Controller::disconnected, this, &MemoryContent::onDisconnected);
+    connect(controller_, &Controller::executionPaused, this, &MemoryContent::onExecutionPaused);
+    connect(controller_, &Controller::executionResumed, this, &MemoryContent::onExecutionResumed);
+    connect(controller_, &Controller::memoryChanged, this, &MemoryContent::onMemoryChanged);
 
     updateSize(0);
 
     enableControls(false);
 }
 
-MemoryWidget::~MemoryWidget() {
+MemoryContent::~MemoryContent() {
 }
 
-void MemoryWidget::enableControls(bool enable) {
+void MemoryContent::enableControls(bool enable) {
     setEnabled(enable);
 }
 
-void MemoryWidget::paintEvent(QPaintEvent* event) {
+void MemoryContent::paintEvent(QPaintEvent* event) {
     QPainter painter(this);
 
     int firstLine = event->rect().top()/lineH_;
@@ -152,35 +169,6 @@ void MemoryWidget::paintEvent(QPaintEvent* event) {
             painter.setPen(fg);
             painter.setBackground(QBrush(bg));
         }
-
-
-//        for (int i = 0; i < kBytesPerLine; i++) {
-//            QString hex;
-//            QString text;
-//            if (pos + i < memory_.size()) {
-//                std::uint8_t c = memory_[pos+i];
-//                hex = QString::asprintf("%02X ", c);
-//                text = isprint(c) ? QString((char)c) : "."; // TODO use PETSCII!
-//            } else {
-//                hex = "   ";
-//                text = " ";
-//            }
-//            painter.drawText(borderW_ + addressW_ +  separatorW_ + i * 29, y, hex);
-//        }
-
-
-//        for (int i = 0; i < kBytesPerLine; i++) {
-//            if (y + i < memory_.size()) {
-//                std::uint8_t c = memory_[y+i];
-//                hex = QString::asprintf("%02X ", c);
-//                text = isprint(c) ? QString((char)c) : "."; // TODO use PETSCII!
-//            } else {
-//                hex = "   ";
-//                text = " ";
-//            }
-//            painter.drawText(borderW_ + addressW_ + separatorW_,  + i*)
-//        }
-//        painter.drawText(borderW_, y, addr + sep + hex + sep + text);
     }
 
     // Draw separators
@@ -191,7 +179,7 @@ void MemoryWidget::paintEvent(QPaintEvent* event) {
     painter.drawLine(x, 0,x, h);
 }
 
-void MemoryWidget::mousePressEvent(QMouseEvent* event) {
+void MemoryContent::mousePressEvent(QMouseEvent* event) {
     event->accept();
     QPoint pos = event->pos();
     int x = pos.x();
@@ -206,27 +194,11 @@ void MemoryWidget::mousePressEvent(QMouseEvent* event) {
     leftEdge = borderW_ + addressW_ + separatorW_ + kBytesPerLine*hexSpaceW_ - charW_ + separatorW_;
     rightEdge = borderW_ + addressW_ + separatorW_ + kBytesPerLine*hexSpaceW_ - charW_ + separatorW_ + kBytesPerLine * charW_;
     if (x >= leftEdge && x < rightEdge) {
-        // Yes!
         maybeEnterByteEditMode(x - leftEdge, pos.y());
     }
-
-
-
-    return;
-
-
-//    // Create an inline edit
-//    QLineEdit* edit = new QLineEdit(this);
-//    edit->setFont(Fonts::robotoMono());
-//    edit->setMaxLength(2);
-//    edit->setAlignment(Qt::AlignHCenter);
-//    edit->move(borderW_ + addressW_ + separatorW_ + col*hexSpaceW_,  line*lineH_);
-//    edit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
-//    edit->setVisible(true);
-//    qDebug() << "==================== " << bytePos;
 }
 
-void MemoryWidget::maybeEnterNibbleEditMode(int x, int y) {
+void MemoryContent::maybeEnterNibbleEditMode(int x, int y) {
     x /= charW_; // x is now the "character pos"
 
     // Are we on a separator space?
@@ -244,13 +216,13 @@ void MemoryWidget::maybeEnterNibbleEditMode(int x, int y) {
     }
 
     editActive_ = true;
+    qDebug() << "******** Start edit mode 'nibble'";
     nibbleMode_ = true;
     cursorPos_ = 2*bytePos + nibbleOfs;
     update();
-    return;
 }
 
-void MemoryWidget::maybeEnterByteEditMode(int x, int y) {
+void MemoryContent::maybeEnterByteEditMode(int x, int y) {
     x /= charW_; // x is now the "character pos"
     int line = y/lineH_;
     int bytePos = line * kBytesPerLine + x;
@@ -263,10 +235,9 @@ void MemoryWidget::maybeEnterByteEditMode(int x, int y) {
     nibbleMode_ = false;
     cursorPos_ = bytePos;
     update();
-    return;
 }
 
-void MemoryWidget::focusOutEvent(QFocusEvent* event) {
+void MemoryContent::focusOutEvent(QFocusEvent* event) {
     editActive_ = false;
     update();
 }
@@ -282,18 +253,35 @@ int charToHex(char c) {
     return -1;
 }
 
-void MemoryWidget::moveCursorRight() {
+void MemoryContent::moveCursorRight() {
     int maxPos = memory_.size() * (nibbleMode_ ? 2 : 1);
     if (cursorPos_ < maxPos) {
         cursorPos_++;
     }
+    update();
+    ensureCursorVisible();
 }
 
-void MemoryWidget::keyPressEvent(QKeyEvent* event) {
-    event->accept();
+void MemoryContent::ensureCursorVisible() {
+    int x, y;
+    if (nibbleMode_) {
+        y = (cursorPos_/2) / kBytesPerLine * lineH_;
+        // TODO(asigner): Extract those calculations in functions!
+        x = borderW_ + addressW_ + separatorW_ + ((cursorPos_/2) % kBytesPerLine) * hexSpaceW_ + (cursorPos_ % 2) * charW_; // T
+    } else {
+        y = cursorPos_ / kBytesPerLine * lineH_;
+        x = borderW_ + addressW_ + separatorW_ + kBytesPerLine*hexSpaceW_ - charW_ + separatorW_ + (cursorPos_ % kBytesPerLine) * charW_;
+    }
+    scrollArea_->ensureVisible(x, y, 0, 50);
+}
+
+void MemoryContent::keyPressEvent(QKeyEvent* event) {
     if (!editActive_) {
+        event->ignore();
         return;
     }
+    qDebug() << "KEYPRESS edit active";
+    event->accept();
 
     // Deal with cursor movement
     switch(event->key()) {
@@ -302,6 +290,7 @@ void MemoryWidget::keyPressEvent(QKeyEvent* event) {
             cursorPos_--;
         }
         update();
+        ensureCursorVisible();
         break;
     case Qt::Key_Right: {
         moveCursorRight();
@@ -314,6 +303,7 @@ void MemoryWidget::keyPressEvent(QKeyEvent* event) {
             cursorPos_ -= delta;
         }
         update();
+        ensureCursorVisible();
         break;
     }
     case Qt::Key_Down: {
@@ -323,6 +313,7 @@ void MemoryWidget::keyPressEvent(QKeyEvent* event) {
             cursorPos_ += delta;
         }
         update();
+        ensureCursorVisible();
         break;
     }
     }
@@ -356,7 +347,7 @@ void MemoryWidget::keyPressEvent(QKeyEvent* event) {
 
 }
 
-void MemoryWidget::onConnected(const MachineState& machineState, const Breakpoints& breakpoints) {
+void MemoryContent::onConnected(const MachineState& machineState, const Breakpoints& breakpoints) {
     qDebug() << "MemoryWidget::onConnected called";
 
     memory_ = machineState.memory;
@@ -365,31 +356,31 @@ void MemoryWidget::onConnected(const MachineState& machineState, const Breakpoin
     enableControls(true);
 }
 
-void MemoryWidget::updateSize(int lines) {
+void MemoryContent::updateSize(int lines) {
     int w = borderW_ + addressW_ + separatorW_ + kBytesPerLine * hexSpaceW_ - charW_ + separatorW_ + kBytesPerLine * charW_ + borderW_;
     int h = lines * lineH_;
     setMinimumSize(w, h);
 }
 
-void MemoryWidget::onDisconnected() {
+void MemoryContent::onDisconnected() {
     qDebug() << "MemoryWidget::onDisconnected called";
     memory_.resize(0);
     updateSize(0);
     enableControls(false);
 }
 
-void MemoryWidget::onExecutionResumed() {
+void MemoryContent::onExecutionResumed() {
     qDebug() << "MemoryWidget::onExecutionResumed called";
     enableControls(false);
 }
 
-void MemoryWidget::onExecutionPaused(const MachineState& machineState) {
+void MemoryContent::onExecutionPaused(const MachineState& machineState) {
     memory_ = machineState.memory;
     enableControls(true);
     update();
 }
 
-void MemoryWidget::onMemoryChanged(std::uint16_t addr, std::vector<std::uint8_t> data) {
+void MemoryContent::onMemoryChanged(std::uint16_t addr, std::vector<std::uint8_t> data) {
     for (auto b : data) {
         memory_[addr++] = b;
     }
