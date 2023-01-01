@@ -20,6 +20,8 @@
 #include "fonts.h"
 
 #include <QFontDatabase>
+#include <QString>
+#include <QList>
 
 namespace vicedebug {
 

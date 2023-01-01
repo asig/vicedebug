@@ -19,8 +19,11 @@
 
 #pragma once
 
+#include <unordered_map>
+
 #include <QGroupBox>
 #include <QTreeWidget>
+#include <QTreeWidgetItem>
 #include <QToolButton>
 
 #include "controller.h"
@@ -58,9 +61,10 @@ private:
     void addItem(Breakpoint bp);
 
     void enableControls(bool enable);
-    void clearControls();
-    void fillControls(const Breakpoints& breakpoints);
+    void clearTree();
+    void fillTree(const Breakpoints& breakpoints);
 
+    std::unordered_map<QTreeWidgetItem*, int> bpNumberForIndex_;
     Controller* controller_;
 
     QTreeWidget* tree_;

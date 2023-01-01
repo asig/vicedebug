@@ -189,17 +189,17 @@ void MemoryContent::mousePressEvent(QMouseEvent* event) {
 }
 
 void MemoryContent::maybeEnterNibbleEditMode(int x, int y) {
-    x /= charW_; // x is now the "character pos"
+    int byteOfs = x / hexSpaceW_;
+    x = x % hexSpaceW_;
+    int nibbleOfs = x / charW_;
 
     // Are we on a separator space?
-    if (x % 3 == 2) {
+    if (nibbleOfs == 2) {
         return;
     }
 
     int line = y/lineH_;
-    int nibbleOfs = x%3 == 0 ? 0 : 1; // Figure out what nibble we're
-    int col = x/3;
-    int bytePos = line * kBytesPerLine + col;
+    int bytePos = line * kBytesPerLine + byteOfs;
     if (bytePos >= memory_.size()) {
         // Out of bounds
         return;

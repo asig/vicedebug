@@ -140,12 +140,12 @@ std::uint8_t ConnectionWorker::readU8() {
     return res;
 }
 
-void ConnectionWorker::putU32(std::uint8_t val, std::uint8_t* buf) {
-    *(buf++) = val & 0xff;
-    *(buf++) = (val >> 8) & 0xff;
-    *(buf++) = (val >> 16) & 0xff;
-    *(buf++) = (val >> 24) & 0xff;
-}
+//void ConnectionWorker::putU32(std::uint32_t val, std::uint8_t* buf) {
+//    *(buf++) = val & 0xff;
+//    *(buf++) = (val >> 8) & 0xff;
+//    *(buf++) = (val >> 16) & 0xff;
+//    *(buf++) = (val >> 24) & 0xff;
+//}
 
 void ConnectionWorker::consumeBytes() {
     std::cout << "Available bytes: " << socket_.bytesAvailable() << std::endl;

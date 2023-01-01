@@ -21,29 +21,33 @@
 
 #include <QDialog>
 #include <QLineEdit>
-#include <QComboBox>
+#include <QCheckBox>
 
 #include "breakpoints.h"
 
 namespace vicedebug {
 
-class AddBreakpointDialog : public QDialog
+class BreakpointDialog : public QDialog
 {
     Q_OBJECT
 
 public:
-    AddBreakpointDialog(QWidget* parent);    
+    explicit BreakpointDialog(QWidget* parent);
+    explicit BreakpointDialog(QWidget* parent, Breakpoint bp);
 
     Breakpoint breakpoint();
 
 private:
+    void setupUI();
     std::uint16_t parseAddress(QString str, bool& ok);
     void enableControls();
     void fillBreakpoint();
 
     QLineEdit* addrStart_;
     QLineEdit* addrEnd_;
-    QComboBox* breakpointType_;
+    QCheckBox* typeExecute_;
+    QCheckBox* typeRead_;
+    QCheckBox* typeWrite_;
 
     QPushButton* okBtn_;
     QPushButton* cancelBtn_;

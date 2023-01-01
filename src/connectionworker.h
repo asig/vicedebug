@@ -275,7 +275,7 @@ private slots:
 private:
     std::uint32_t readU32();
     std::uint8_t readU8();
-    void putU32(std::uint8_t val, std::uint8_t* buf);
+    //void putU32(std::uint32_t val, std::uint8_t* buf);
     void handleMessage(std::vector<std::uint8_t> message);
 
     MessageCollector currentMessage_;

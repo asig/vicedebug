@@ -17,38 +17,66 @@
  * along with vicedebug.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "addbreakpointdialog.h"
+#include "breakpointdialog.h"
 
 #include <QVBoxLayout>
 #include <QPushButton>
 #include <QLabel>
 #include <QLineEdit>
 #include <QComboBox>
+#include <QGroupBox>
 
 namespace vicedebug {
 
-AddBreakpointDialog::AddBreakpointDialog(QWidget* parent) : QDialog(parent) {
+BreakpointDialog::BreakpointDialog(QWidget* parent) : QDialog(parent) {
+    setupUI();
+    setWindowTitle("Add breakpoint...");
+}
+
+BreakpointDialog::BreakpointDialog(QWidget* parent, Breakpoint breakpoint) : QDialog(parent) {
+    setupUI();
+    addrStart_->setText(QString::asprintf("%04X", breakpoint.addrStart));
+    addrEnd_->setText(breakpoint.addrEnd == breakpoint.addrStart ? "" : QString::asprintf("%04X", breakpoint.addrEnd));
+    typeExecute_->setChecked(breakpoint.op & Breakpoint::Type::EXEC);
+    typeRead_->setChecked(breakpoint.op & Breakpoint::Type::READ);
+    typeWrite_->setChecked(breakpoint.op & Breakpoint::Type::WRITE);
+    setWindowTitle("Edit breakpoint...");
+}
+
+void BreakpointDialog::setupUI() {
     QVBoxLayout* vLayout = new QVBoxLayout();
 
     addrStart_ = new QLineEdit();
+    addrStart_->setMaxLength(4);
     addrEnd_ = new QLineEdit();
+    addrEnd_->setMaxLength(4);
 
-    connect(addrStart_, &QLineEdit::textChanged, this, &AddBreakpointDialog::enableControls);
-    connect(addrEnd_, &QLineEdit::textChanged, this, &AddBreakpointDialog::enableControls);
+    QFontMetrics fm = addrStart_->fontMetrics();
+    int w = fm.boundingRect("0000").width();
+    addrStart_->setFixedWidth(w + 10); // some slack
+    addrEnd_->setFixedWidth(w + 10); // some slack
+    connect(addrStart_, &QLineEdit::textChanged, this, &BreakpointDialog::enableControls);
+    connect(addrEnd_, &QLineEdit::textChanged, this, &BreakpointDialog::enableControls);
 
-    breakpointType_ = new QComboBox();
-    breakpointType_->addItem("Execute", QVariant(Breakpoint::Type::EXEC));
-    breakpointType_->addItem("Read", QVariant(Breakpoint::Type::READ));
-    breakpointType_->addItem("Write", QVariant(Breakpoint::Type::WRITE));
+    typeExecute_ = new QCheckBox(tr("Execute"));
+    typeRead_ = new QCheckBox(tr("Read"));
+    typeWrite_ = new QCheckBox(tr("Write"));
+    QHBoxLayout* typeGroupLayout = new QHBoxLayout();
+    typeGroupLayout->addWidget(typeExecute_);
+    typeGroupLayout->addWidget(typeRead_);
+    typeGroupLayout->addWidget(typeWrite_);
+    typeGroupLayout->addStretch(1);
+    QGroupBox* typeGroup = new QGroupBox(tr("Break on..."));
+    typeGroup->setLayout(typeGroupLayout);
 
-    QHBoxLayout* data = new QHBoxLayout();
-    data->addWidget(new QLabel("Address: from "));
-    data->addWidget(addrStart_);
-    data->addWidget(new QLabel("to"));
-    data->addWidget(addrEnd_);
-    data->addSpacing(20);
-    data->addWidget(new QLabel("Type:"));
-    data->addWidget(breakpointType_);
+    QHBoxLayout* addrRangeLayout = new QHBoxLayout();
+    addrRangeLayout->addWidget(new QLabel("From "));
+    addrRangeLayout->addWidget(addrStart_);
+    addrRangeLayout->addWidget(new QLabel("to"));
+    addrRangeLayout->addWidget(addrEnd_);
+    addrRangeLayout->addSpacing(20);
+    QGroupBox* addrRangeGroup = new QGroupBox(tr("Address range..."));
+    addrRangeGroup->setLayout(addrRangeLayout);
 
     QHBoxLayout* buttons = new QHBoxLayout();
     okBtn_ = new QPushButton("Ok");
@@ -62,21 +90,21 @@ AddBreakpointDialog::AddBreakpointDialog(QWidget* parent) : QDialog(parent) {
     buttons->addWidget(okBtn_);
     buttons->addWidget(cancelBtn_);
 
-    vLayout->addLayout(data);
+    vLayout->addWidget(addrRangeGroup);
+    vLayout->addWidget(typeGroup);
     vLayout->addSpacing(10);
     vLayout->addLayout(buttons);
 
     setLayout(vLayout);
 
-    setWindowTitle("Add Breakpoint...");
     enableControls();
 }
 
-Breakpoint AddBreakpointDialog::breakpoint() {
+Breakpoint BreakpointDialog::breakpoint() {
     return bp_;
 }
 
-std::uint16_t AddBreakpointDialog::parseAddress(QString str, bool& ok) {
+std::uint16_t BreakpointDialog::parseAddress(QString str, bool& ok) {
     str = str.trimmed();
     if (str.length() == 0) {
         ok = false;
@@ -95,7 +123,7 @@ std::uint16_t AddBreakpointDialog::parseAddress(QString str, bool& ok) {
     return res;
 }
 
-void AddBreakpointDialog::enableControls() {
+void BreakpointDialog::enableControls() {
     cancelBtn_->setEnabled(true);
 
     QString addrStartStr = addrStart_->text().trimmed();
@@ -121,14 +149,16 @@ void AddBreakpointDialog::enableControls() {
     okBtn_->setEnabled(addrEnd >= addrStart);
 }
 
-void AddBreakpointDialog::fillBreakpoint() {
+void BreakpointDialog::fillBreakpoint() {
     bool ok;
     bp_.addrStart = parseAddress(addrStart_->text(), ok);
     bp_.addrEnd = parseAddress(addrEnd_->text(), ok);
     if (!ok) {
         bp_.addrEnd = bp_.addrStart;
     }
-    bp_.op = breakpointType_->currentData().toInt();
+    bp_.op = (typeExecute_->isChecked() ? Breakpoint::Type::EXEC : 0)
+            | (typeRead_->isChecked() ? Breakpoint::Type::READ : 0)
+            | (typeWrite_->isChecked() ? Breakpoint::Type::WRITE : 0);
 }
 
 }

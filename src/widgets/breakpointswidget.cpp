@@ -25,8 +25,9 @@
 #include <QVBoxLayout>
 #include <QSpacerItem>
 #include <QStringList>
+#include <QTimer>
 
-#include "dialogs/addbreakpointdialog.h"
+#include "dialogs/breakpointdialog.h"
 
 namespace vicedebug {
 
@@ -106,11 +107,11 @@ void BreakpointsWidget::enableControls(bool enable) {
     removeBtn_->setEnabled(tree_->selectedItems().size() == 1);
 }
 
-void BreakpointsWidget::clearControls() {
+void BreakpointsWidget::clearTree() {
     tree_->clear();
 }
 
-void BreakpointsWidget::fillControls(const Breakpoints& breakpoints) {
+void BreakpointsWidget::fillTree(const Breakpoints& breakpoints) {
     Breakpoints copy = breakpoints;
     std::sort(copy.begin(), copy.end(), [](const Breakpoint& b1, const Breakpoint& b2) {
                                                    if (b1.addrStart == b2.addrStart) {
@@ -126,13 +127,13 @@ void BreakpointsWidget::fillControls(const Breakpoints& breakpoints) {
 void BreakpointsWidget::onConnected(const MachineState& machineState, const Breakpoints& breakpoints) {
     qDebug() << "BreakpointsWidget::onConnected called";
     enableControls(true);    
-    fillControls(breakpoints);
+    fillTree(breakpoints);
 }
 
 void BreakpointsWidget::onDisconnected() {
     qDebug() << "BreakpointsWidget::onDisconnected called";
     enableControls(false);
-    clearControls();
+    clearTree();
 }
 
 void BreakpointsWidget::onExecutionResumed() {
@@ -146,8 +147,8 @@ void BreakpointsWidget::onExecutionPaused(const MachineState& machineState) {
 }
 
 void BreakpointsWidget::onBreakpointsChanged(const Breakpoints& breakpoints) {
-    clearControls();
-    fillControls(breakpoints);
+    clearTree();
+    fillTree(breakpoints);
 }
 
 void BreakpointsWidget::onTreeItemSelectionChanged() {
@@ -156,18 +157,26 @@ void BreakpointsWidget::onTreeItemSelectionChanged() {
 }
 
 void BreakpointsWidget::onTreeItemChanged(QTreeWidgetItem* item, int column) {
+    qDebug() << "Entering onTreeItemChanged()";
     if (column != 0) {
         return;
     }
-    int bpNumber = item->data(0,Qt::UserRole).toUInt();
-    controller_->enableBreakpoint(bpNumber, item->checkState(0));
+
+    std::uint32_t bpNumber = item->data(0, Qt::UserRole).toUInt();
+    bool checked = item->checkState(0);
+    // Ensure that the breakpoints are only updated after the tree's itemChanged signal is fully handled.
+    QTimer::singleShot(0, [this, bpNumber, checked] {
+        controller_->enableBreakpoint(bpNumber, checked);
+    });
+    qDebug() << "Leaving onTreeItemChanged()";
 }
 
 void BreakpointsWidget::onAddClicked() {
-    AddBreakpointDialog dlg(this);
+    BreakpointDialog dlg(this);
     int res = dlg.exec();
     if (res == QDialog::DialogCode::Accepted) {
-        qDebug() << "ADD BREAKPOINT!!!";
+        Breakpoint bp = dlg.breakpoint();
+        controller_->createBreakpoint(bp.op, bp.addrStart,bp.addrEnd);
     }
 }
 
@@ -178,7 +187,7 @@ void BreakpointsWidget::onRemoveClicked() {
         return;
     }
 
-    int bpNumber = selected[0]->data(0,Qt::UserRole).toUInt();
+    std::uint32_t bpNumber = selected[0]->data(0, Qt::UserRole).toUInt();
     controller_->deleteBreakpoint(bpNumber);
 }
 
