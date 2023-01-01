@@ -66,16 +66,6 @@ MemoryWidget::MemoryWidget(Controller* controller, QWidget* parent) :
 MemoryWidget::~MemoryWidget() {
 }
 
-//void DisassemblyWidget::resizeEvent(QResizeEvent* event) {
-//    QSize vpSize = viewport()->size();
-//    QSize disassemblySize = widget()->size();
-//    int newW = std::max(vpSize.width(), widget()->sizeHint().width());
-//    disassemblySize.setWidth(newW);
-//    widget()->resize(disassemblySize);
-//}
-
-
-
 MemoryContent::MemoryContent(Controller* controller, QScrollArea* parent) :
     QWidget(parent), controller_(controller), scrollArea_(parent)
 {
@@ -188,13 +178,13 @@ void MemoryContent::mousePressEvent(QMouseEvent* event) {
     int rightEdge = borderW_ + addressW_ + separatorW_ + kBytesPerLine * hexSpaceW_ - charW_;
     if (x >= leftEdge && x < rightEdge) {
         maybeEnterNibbleEditMode(x - leftEdge, pos.y());
-    }
-
-    // Are we in the text part?
-    leftEdge = borderW_ + addressW_ + separatorW_ + kBytesPerLine*hexSpaceW_ - charW_ + separatorW_;
-    rightEdge = borderW_ + addressW_ + separatorW_ + kBytesPerLine*hexSpaceW_ - charW_ + separatorW_ + kBytesPerLine * charW_;
-    if (x >= leftEdge && x < rightEdge) {
-        maybeEnterByteEditMode(x - leftEdge, pos.y());
+    } else {
+        // Are we in the text part?
+        leftEdge = borderW_ + addressW_ + separatorW_ + kBytesPerLine*hexSpaceW_ - charW_ + separatorW_;
+        rightEdge = borderW_ + addressW_ + separatorW_ + kBytesPerLine*hexSpaceW_ - charW_ + separatorW_ + kBytesPerLine * charW_;
+        if (x >= leftEdge && x < rightEdge) {
+            maybeEnterByteEditMode(x - leftEdge, pos.y());
+        }
     }
 }
 
@@ -216,7 +206,6 @@ void MemoryContent::maybeEnterNibbleEditMode(int x, int y) {
     }
 
     editActive_ = true;
-    qDebug() << "******** Start edit mode 'nibble'";
     nibbleMode_ = true;
     cursorPos_ = 2*bytePos + nibbleOfs;
     update();
@@ -280,7 +269,6 @@ void MemoryContent::keyPressEvent(QKeyEvent* event) {
         event->ignore();
         return;
     }
-    qDebug() << "KEYPRESS edit active";
     event->accept();
 
     // Deal with cursor movement
@@ -348,8 +336,6 @@ void MemoryContent::keyPressEvent(QKeyEvent* event) {
 }
 
 void MemoryContent::onConnected(const MachineState& machineState, const Breakpoints& breakpoints) {
-    qDebug() << "MemoryWidget::onConnected called";
-
     memory_ = machineState.memory;
     updateSize(memory_.size() / kBytesPerLine);
 
@@ -363,14 +349,12 @@ void MemoryContent::updateSize(int lines) {
 }
 
 void MemoryContent::onDisconnected() {
-    qDebug() << "MemoryWidget::onDisconnected called";
     memory_.resize(0);
     updateSize(0);
     enableControls(false);
 }
 
 void MemoryContent::onExecutionResumed() {
-    qDebug() << "MemoryWidget::onExecutionResumed called";
     enableControls(false);
 }
 

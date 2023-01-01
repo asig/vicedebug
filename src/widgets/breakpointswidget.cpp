@@ -26,32 +26,34 @@
 #include <QSpacerItem>
 #include <QStringList>
 
+#include "dialogs/addbreakpointdialog.h"
+
 namespace vicedebug {
 
 BreakpointsWidget::BreakpointsWidget(Controller* controller, QWidget* parent) :
     QGroupBox("Breakpoints", parent), controller_(controller)
 {
-
     QStringList l;
 
     tree_ = new QTreeWidget();
     tree_->setColumnCount(3);
     tree_->setHeaderLabels({ "Enabled","Address","Type"} );
     tree_->setSelectionBehavior(QAbstractItemView::SelectRows);
+    connect(tree_, &QTreeWidget::itemSelectionChanged, this, &BreakpointsWidget::onTreeItemSelectionChanged);
+    connect(tree_, &QTreeWidget::itemChanged, this, &BreakpointsWidget::onTreeItemChanged);
 
     addBtn_ = new QToolButton();
     addBtn_->setIcon(QIcon(":/images/codicons/add.svg"));
+    connect(addBtn_, &QToolButton::clicked, this, &BreakpointsWidget::onAddClicked);
 
     removeBtn_ = new QToolButton();
     removeBtn_->setIcon(QIcon(":/images/codicons/remove.svg"));
+    connect(removeBtn_, &QToolButton::clicked, this, &BreakpointsWidget::onRemoveClicked);
 
     QVBoxLayout* vLayout = new QVBoxLayout();
-
     vLayout->addWidget(addBtn_);
     vLayout->addWidget(removeBtn_);
     vLayout->addStretch(10);
-
-//    vLayout->addSpacerItem(vLayout->spacerItem());
 
     QHBoxLayout* hLayout = new QHBoxLayout();
     hLayout->addWidget(tree_);
@@ -63,38 +65,37 @@ BreakpointsWidget::BreakpointsWidget(Controller* controller, QWidget* parent) :
     connect(controller_, &Controller::disconnected, this, &BreakpointsWidget::onDisconnected);
     connect(controller_, &Controller::executionPaused, this, &BreakpointsWidget::onExecutionPaused);
     connect(controller_, &Controller::executionResumed, this, &BreakpointsWidget::onExecutionResumed);
-    connect(controller_, &Controller::breakpointsChanged, this, &BreakpointsWidget::onBreakpointsChanged);
+    connect(controller_, &Controller::breakpointsChanged, this, &BreakpointsWidget::onBreakpointsChanged);       
 
     enableControls(false);
-
 }
 
-BreakpointsWidget::~BreakpointsWidget()
-{
+BreakpointsWidget::~BreakpointsWidget() {
 }
 
-void BreakpointsWidget::addItem(bool enabled, std::uint8_t type, std::uint16_t addrStart, std::uint16_t addrEnd) {
+void BreakpointsWidget::addItem(Breakpoint bp) {
 
-    QString rangeStr = QString::asprintf("%04x", addrStart);
-    if (addrEnd != addrStart) {
-        rangeStr += " - " + QString::asprintf("%04x", addrEnd);
+    QString rangeStr = QString::asprintf("%04x", bp.addrStart);
+    if (bp.addrEnd != bp.addrStart) {
+        rangeStr += " - " + QString::asprintf("%04x", bp.addrEnd);
     }
 
     QString typeStr = "";
-    if (type & Breakpoint::READ) {
+    if (bp.op & Breakpoint::READ) {
         typeStr += "R";
     }
-    if (type & Breakpoint::WRITE) {
+    if (bp.op & Breakpoint::WRITE) {
         typeStr += "W";
     }
-    if (type & Breakpoint::EXEC) {
+    if (bp.op & Breakpoint::EXEC) {
         typeStr += "X";
     }
 
     QTreeWidgetItem* item = new QTreeWidgetItem();
-    item->setCheckState(0, enabled ? Qt::Checked : Qt::Unchecked);
+    item->setCheckState(0, bp.enabled ? Qt::Checked : Qt::Unchecked);
     item->setText(1, rangeStr);
     item->setText(2, typeStr);
+    item->setData(0, Qt::UserRole, QVariant(bp.number));
 
     tree_->insertTopLevelItem(tree_->topLevelItemCount(), item);
 }
@@ -102,9 +103,8 @@ void BreakpointsWidget::addItem(bool enabled, std::uint8_t type, std::uint16_t a
 void BreakpointsWidget::enableControls(bool enable) {
     tree_->setEnabled(enable);
     addBtn_->setEnabled(enable);
-    removeBtn_->setEnabled(enable);
+    removeBtn_->setEnabled(tree_->selectedItems().size() == 1);
 }
-
 
 void BreakpointsWidget::clearControls() {
     tree_->clear();
@@ -119,7 +119,7 @@ void BreakpointsWidget::fillControls(const Breakpoints& breakpoints) {
                                                    return b1.addrStart < b2.addrStart;
                                                });
     for (const Breakpoint& bp : copy) {
-        addItem(bp.enabled, bp.op, bp.addrStart, bp.addrEnd);
+        addItem(bp);
     }
 }
 
@@ -148,6 +148,38 @@ void BreakpointsWidget::onExecutionPaused(const MachineState& machineState) {
 void BreakpointsWidget::onBreakpointsChanged(const Breakpoints& breakpoints) {
     clearControls();
     fillControls(breakpoints);
+}
+
+void BreakpointsWidget::onTreeItemSelectionChanged() {
+    auto selectedItems = tree_->selectedItems();
+    removeBtn_->setEnabled(selectedItems.size() == 1);
+}
+
+void BreakpointsWidget::onTreeItemChanged(QTreeWidgetItem* item, int column) {
+    if (column != 0) {
+        return;
+    }
+    int bpNumber = item->data(0,Qt::UserRole).toUInt();
+    controller_->enableBreakpoint(bpNumber, item->checkState(0));
+}
+
+void BreakpointsWidget::onAddClicked() {
+    AddBreakpointDialog dlg(this);
+    int res = dlg.exec();
+    if (res == QDialog::DialogCode::Accepted) {
+        qDebug() << "ADD BREAKPOINT!!!";
+    }
+}
+
+void BreakpointsWidget::onRemoveClicked() {
+    auto selected = tree_->selectedItems();
+    if (selected.size() != 1) {
+        qDebug() << "BreakpointsWidget: 'Remove' button clicked, but selection size is " << selected.size() << "... WTF?";
+        return;
+    }
+
+    int bpNumber = selected[0]->data(0,Qt::UserRole).toUInt();
+    controller_->deleteBreakpoint(bpNumber);
 }
 
 }

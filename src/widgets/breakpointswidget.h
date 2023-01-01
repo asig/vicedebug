@@ -48,8 +48,14 @@ public slots:
     void onExecutionPaused(const MachineState& machineState);
     void onBreakpointsChanged(const Breakpoints& breakpoints);
 
+private slots:
+    void onTreeItemSelectionChanged();
+    void onTreeItemChanged(QTreeWidgetItem* item, int column);
+    void onAddClicked();
+    void onRemoveClicked();
+
 private:
-    void addItem(bool enabled, std::uint8_t type, std::uint16_t addrStart, std::uint16_t addrEnd);
+    void addItem(Breakpoint bp);
 
     void enableControls(bool enable);
     void clearControls();

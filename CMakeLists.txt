@@ -33,6 +33,8 @@ set(SHARED_SOURCES
         resources/resources.qrc
         src/fonts.h
         src/fonts.cpp
+        src/dialogs/addbreakpointdialog.h
+        src/dialogs/addbreakpointdialog.cpp
         src/widgets/breakpointswidget.h
         src/widgets/breakpointswidget.cpp
         src/widgets/disassemblywidget.h

@@ -134,7 +134,14 @@ void Controller::createBreakpoint(std::uint8_t op, std::uint16_t start, std::uin
     emitBreakpoints();
 }
 
-void Controller::enableBreakpoint(int breakpointNumber, bool enabled) {
+void Controller::deleteBreakpoint(std::uint32_t breakpointNumber) {
+    auto checkpointDeleteFuture = viceClient_->checkpointDelete(breakpointNumber);
+    // Response is empty, no need to wait for the result.
+    breakpoints_.erase(breakpointNumber);
+    emitBreakpoints();
+}
+
+void Controller::enableBreakpoint(std::uint32_t breakpointNumber, bool enabled) {
     auto checkpointToggleFuture = viceClient_->checkpointToggle(breakpointNumber, enabled);
     // Response is empty, no need to wait for the result.
 //    checkpointToggleFuture.waitForFinished();
