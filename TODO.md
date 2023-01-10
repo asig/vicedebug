@@ -7,11 +7,13 @@
 
 ## Memory Widget
 - [X] Allow modifying memory
+- [ ] "Jump to address" box
+- [ ] switch between uc/graphics and lc/uc fonts (U+EExx vs U+EFxx)
 
 ## Breakpoints Widget
-- [ ] Add breakpoint
-- [ ] Remove breakpoint
-- [ ] Enable/Disable breakpoints
+- [X] Add breakpoint
+- [X] Remove breakpoint
+- [X] Enable/Disable breakpoints
 
 ## Watches Widget
 - [ ] Add
