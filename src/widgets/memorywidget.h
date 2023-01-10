@@ -93,7 +93,9 @@ private:
     int addressW_; // Address part
     int separatorW_; // Separator width between address and hex, as well as hex and text
     int hexSpaceW_; // hex part
+    int hexCharW_; // single character in the hex part
     int textW_;
+
     int charW_; // text part
 };
 

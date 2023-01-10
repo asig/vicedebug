@@ -55,7 +55,6 @@ MemoryWidget::MemoryWidget(Controller* controller, QWidget* parent) :
     content_ = new MemoryContent(controller, this);
     setWidgetResizable(true);
     setWidget(content_);
-    setFont(Fonts::robotoMono());
 
     connect(controller, &Controller::connected, this, [this]() { this->setEnabled(true);} );
     connect(controller, &Controller::disconnected, this, [this]() { this->setEnabled(false);} );
@@ -72,14 +71,18 @@ MemoryContent::MemoryContent(Controller* controller, QScrollArea* parent) :
     setFocusPolicy(Qt::StrongFocus);
 
     // Compute the size of the widget:
-    QFontMetrics fm(Fonts::robotoMono());
-    lineH_ = fm.height();
-    ascent_ = fm.ascent();
-    borderW_ = fm.horizontalAdvance(" ");
-    addressW_ = fm.horizontalAdvance("00000");
-    separatorW_ = fm.horizontalAdvance(kSeparator);
-    hexSpaceW_ = fm.horizontalAdvance("00 ");
-    charW_ = fm.horizontalAdvance("0");
+    QFontMetrics robotofm(Fonts::robotoMono());
+    ascent_ = robotofm.ascent();
+    borderW_ = robotofm.horizontalAdvance(" ");
+    addressW_ = robotofm.horizontalAdvance("00000");
+    separatorW_ = robotofm.horizontalAdvance(kSeparator);
+    hexSpaceW_ = robotofm.horizontalAdvance("00 ");
+    hexCharW_ = robotofm.horizontalAdvance("0");
+
+    QFontMetrics c64fm(Fonts::c64());
+    charW_ = c64fm.horizontalAdvance("0");
+
+    lineH_ = c64fm.height() > robotofm.height() ? c64fm.height() : robotofm.height();
 
     connect(controller_, &Controller::connected, this, &MemoryContent::onConnected);
     connect(controller_, &Controller::disconnected, this, &MemoryContent::onDisconnected);
@@ -97,6 +100,40 @@ MemoryContent::~MemoryContent() {
 
 void MemoryContent::enableControls(bool enable) {
     setEnabled(enable);
+}
+
+std::uint8_t petsciiToScreenCode(std::uint8_t petscii) {
+    // See https://sta.c64.org/cbm64pettoscr.html
+    if (petscii < 32) {
+        return petscii + 128;
+    }
+    if (petscii < 64) {
+        return petscii;
+    }
+    if (petscii < 96) {
+        return petscii - 64;
+    }
+    if (petscii < 128) {
+        return petscii - 32;
+    }
+    if (petscii < 160) {
+        return petscii + 64;
+    }
+    if (petscii < 192) {
+        return petscii - 64;
+    }
+    if (petscii < 224) {
+        return petscii - 128;
+    }
+    if (petscii < 255) {
+        return petscii - 128;
+    }
+    return 94;
+}
+
+std::uint8_t petsciiIsPrint(std::uint8_t petscii) {
+    bool isCtrl = petscii < 32 || (128 <= petscii && petscii < 160);
+    return !isCtrl;
 }
 
 void MemoryContent::paintEvent(QPaintEvent* event) {
@@ -123,6 +160,7 @@ void MemoryContent::paintEvent(QPaintEvent* event) {
         }
 
         QString addr = QString::asprintf(addrFormatString, pos);
+        painter.setFont(Fonts::robotoMono());
         painter.drawText(borderW_, y, addr);
         for (int i = 0; i < kBytesPerLine; i++) {
             QString hex;
@@ -130,13 +168,15 @@ void MemoryContent::paintEvent(QPaintEvent* event) {
             if (pos + i < memory_.size()) {
                 std::uint8_t c = memory_[pos+i];
                 hex = QString::asprintf("%02X ", c);
-                text = isprint(c) ? QString((char)c) : "."; // TODO use PETSCII!
+                text = petsciiIsPrint(c) ? QString(QChar(0xef00 + petsciiToScreenCode(c))) : ".";
             } else {
                 hex = "   ";
                 text = " ";
             }
+            painter.setFont(Fonts::robotoMono());
             painter.drawText(borderW_ + addressW_ + separatorW_ + i*hexSpaceW_, y, hex);
-            painter.drawText(borderW_ + addressW_ + separatorW_ + kBytesPerLine*hexSpaceW_ - charW_ + separatorW_ + i * charW_ , y, text);
+            painter.setFont(Fonts::c64());
+            painter.drawText(borderW_ + addressW_ + separatorW_ + kBytesPerLine*hexSpaceW_ - hexCharW_ + separatorW_ + i * charW_ , y, text);
         }
 
         if (editActive_) {
@@ -145,15 +185,17 @@ void MemoryContent::paintEvent(QPaintEvent* event) {
             QString text;
             if (nibbleMode_) {
                 if (pos <= cursorPos_/2 && cursorPos_/2 < pos+kBytesPerLine) {
-                    int x = borderW_ + addressW_ + separatorW_ + ((cursorPos_/2) % kBytesPerLine) * hexSpaceW_ + (cursorPos_ % 2) * charW_;
+                    int x = borderW_ + addressW_ + separatorW_ + ((cursorPos_/2) % kBytesPerLine) * hexSpaceW_ + (cursorPos_ % 2) * hexCharW_;
                     text = QString::asprintf("%02X",memory_[cursorPos_/2]).mid((cursorPos_ % 2),1);
+                    painter.setFont(Fonts::robotoMono());
                     painter.drawText(x, y, text);
                 }
             } else {
                 if (pos <= cursorPos_ && cursorPos_ < pos+kBytesPerLine) {
                     char c = (char)memory_[cursorPos_];
-                    text = isprint(c) ? QString(c) : "."; // TODO use PETSCII!
-                    painter.drawText(borderW_ + addressW_ + separatorW_ + kBytesPerLine*hexSpaceW_ - charW_ + separatorW_ + (cursorPos_ % kBytesPerLine) * charW_ , y, text);
+                    text = petsciiIsPrint(c) ? QString(QChar(0xef00 + petsciiToScreenCode(c))) : ".";
+                    painter.setFont(Fonts::c64());
+                    painter.drawText(borderW_ + addressW_ + separatorW_ + kBytesPerLine*hexSpaceW_ - hexCharW_ + separatorW_ + (cursorPos_ % kBytesPerLine) * charW_ , y, text);
                 }
             }
             painter.setPen(fg);
@@ -165,7 +207,7 @@ void MemoryContent::paintEvent(QPaintEvent* event) {
     int h = lineH_ * ((memory_.size() + kBytesPerLine - 1)/kBytesPerLine);
     int x = borderW_ + addressW_ + separatorW_/2;
     painter.drawLine(x, 0, x, h);
-    x = borderW_ + addressW_ + separatorW_ + kBytesPerLine*hexSpaceW_ - charW_ + separatorW_/2;
+    x = borderW_ + addressW_ + separatorW_ + kBytesPerLine*hexSpaceW_ - hexCharW_ + separatorW_/2;
     painter.drawLine(x, 0,x, h);
 }
 
@@ -175,13 +217,13 @@ void MemoryContent::mousePressEvent(QMouseEvent* event) {
     int x = pos.x();
     // Are we in the hex part?
     int leftEdge = borderW_ + addressW_ + separatorW_;
-    int rightEdge = borderW_ + addressW_ + separatorW_ + kBytesPerLine * hexSpaceW_ - charW_;
+    int rightEdge = borderW_ + addressW_ + separatorW_ + kBytesPerLine * hexSpaceW_ - hexCharW_;
     if (x >= leftEdge && x < rightEdge) {
         maybeEnterNibbleEditMode(x - leftEdge, pos.y());
     } else {
         // Are we in the text part?
-        leftEdge = borderW_ + addressW_ + separatorW_ + kBytesPerLine*hexSpaceW_ - charW_ + separatorW_;
-        rightEdge = borderW_ + addressW_ + separatorW_ + kBytesPerLine*hexSpaceW_ - charW_ + separatorW_ + kBytesPerLine * charW_;
+        leftEdge = borderW_ + addressW_ + separatorW_ + kBytesPerLine*hexSpaceW_ - hexCharW_ + separatorW_;
+        rightEdge = borderW_ + addressW_ + separatorW_ + kBytesPerLine*hexSpaceW_ - hexCharW_ + separatorW_ + kBytesPerLine * charW_;
         if (x >= leftEdge && x < rightEdge) {
             maybeEnterByteEditMode(x - leftEdge, pos.y());
         }
@@ -191,7 +233,7 @@ void MemoryContent::mousePressEvent(QMouseEvent* event) {
 void MemoryContent::maybeEnterNibbleEditMode(int x, int y) {
     int byteOfs = x / hexSpaceW_;
     x = x % hexSpaceW_;
-    int nibbleOfs = x / charW_;
+    int nibbleOfs = x / hexCharW_;
 
     // Are we on a separator space?
     if (nibbleOfs == 2) {
@@ -256,10 +298,10 @@ void MemoryContent::ensureCursorVisible() {
     if (nibbleMode_) {
         y = (cursorPos_/2) / kBytesPerLine * lineH_;
         // TODO(asigner): Extract those calculations in functions!
-        x = borderW_ + addressW_ + separatorW_ + ((cursorPos_/2) % kBytesPerLine) * hexSpaceW_ + (cursorPos_ % 2) * charW_; // T
+        x = borderW_ + addressW_ + separatorW_ + ((cursorPos_/2) % kBytesPerLine) * hexSpaceW_ + (cursorPos_ % 2) * hexCharW_; // T
     } else {
         y = cursorPos_ / kBytesPerLine * lineH_;
-        x = borderW_ + addressW_ + separatorW_ + kBytesPerLine*hexSpaceW_ - charW_ + separatorW_ + (cursorPos_ % kBytesPerLine) * charW_;
+        x = borderW_ + addressW_ + separatorW_ + kBytesPerLine*hexSpaceW_ - hexCharW_ + separatorW_ + (cursorPos_ % kBytesPerLine) * charW_;
     }
     scrollArea_->ensureVisible(x, y, 0, 50);
 }
@@ -343,7 +385,7 @@ void MemoryContent::onConnected(const MachineState& machineState, const Breakpoi
 }
 
 void MemoryContent::updateSize(int lines) {
-    int w = borderW_ + addressW_ + separatorW_ + kBytesPerLine * hexSpaceW_ - charW_ + separatorW_ + kBytesPerLine * charW_ + borderW_;
+    int w = borderW_ + addressW_ + separatorW_ + kBytesPerLine * hexSpaceW_ - hexCharW_ + separatorW_ + kBytesPerLine * charW_ + borderW_;
     int h = lines * lineH_;
     setMinimumSize(w, h);
 }
