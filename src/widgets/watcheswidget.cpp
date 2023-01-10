@@ -18,6 +18,7 @@
  */
 
 #include "widgets/watcheswidget.h"
+#include "dialogs/watchdialog.h"
 
 #include <QGroupBox>
 #include <QHBoxLayout>
@@ -29,24 +30,26 @@ namespace vicedebug {
 WatchesWidget::WatchesWidget(Controller* controller, QWidget* parent) :
     QGroupBox("Watches", parent), controller_(controller)
 {
+    QStringList l;
+
     tree_ = new QTreeWidget();
     tree_->setColumnCount(3);
-    tree_->setHeaderLabels({ "Enabled","Address","Type"} );
+    tree_->setHeaderLabels({ "Address","Type", "Value"} );
     tree_->setSelectionBehavior(QAbstractItemView::SelectRows);
+    connect(tree_, &QTreeWidget::itemSelectionChanged, this, &WatchesWidget::onTreeItemSelectionChanged);
 
     addBtn_ = new QToolButton();
     addBtn_->setIcon(QIcon(":/images/codicons/add.svg"));
+    connect(addBtn_, &QToolButton::clicked, this, &WatchesWidget::onAddClicked);
 
     removeBtn_ = new QToolButton();
     removeBtn_->setIcon(QIcon(":/images/codicons/remove.svg"));
+    connect(removeBtn_, &QToolButton::clicked, this, &WatchesWidget::onRemoveClicked);
 
     QVBoxLayout* vLayout = new QVBoxLayout();
-
     vLayout->addWidget(addBtn_);
     vLayout->addWidget(removeBtn_);
     vLayout->addStretch(10);
-
-//    vLayout->addSpacerItem(vLayout->spacerItem());
 
     QHBoxLayout* hLayout = new QHBoxLayout();
     hLayout->addWidget(tree_);
@@ -58,9 +61,8 @@ WatchesWidget::WatchesWidget(Controller* controller, QWidget* parent) :
     connect(controller_, &Controller::disconnected, this, &WatchesWidget::onDisconnected);
     connect(controller_, &Controller::executionPaused, this, &WatchesWidget::onExecutionPaused);
     connect(controller_, &Controller::executionResumed, this, &WatchesWidget::onExecutionResumed);
-    connect(controller_, &Controller::memoryChanged, this, &WatchesWidget::onMemoryChanged);
 
-    enableControls(false);   
+    enableControls(false);
 }
 
 WatchesWidget::~WatchesWidget()
@@ -73,26 +75,66 @@ void WatchesWidget::enableControls(bool enable) {
     removeBtn_->setEnabled(enable);
 }
 
-void WatchesWidget::clearControls() {
+void WatchesWidget::clearTree() {
     tree_->clear();
 }
 
-void WatchesWidget::fillControls(const MachineState& machineState) {
-    // FIXME fill UI
+QString viewTypeAsStr(const Watch& w) {
+    switch(w.viewType) {
+    case Watch::ViewType::INT_HEX:
+    case Watch::ViewType::INT:
+        switch(w.len) {
+        case 1: return "int8";
+        case 2: return "int16";
+        }
+        return "???";
+    case Watch::ViewType::UINT_HEX:
+    case Watch::ViewType::UINT:
+        switch(w.len) {
+        case 1: return "uint8";
+        case 2: return "uint16";
+        }
+        return "???";
+    case Watch::ViewType::FLOAT:
+        return "float";
+    case Watch::ViewType::CHARS:
+        return QString::asprintf("String(%d)", w.len);
+    case Watch::ViewType::BYTES:
+        return QString::asprintf("Bytes(%d)", w.len);
+    }
+    return "???";
+}
+
+void WatchesWidget::appendWatchToTree(const Watch& w) {
     QTreeWidgetItem* item = new QTreeWidgetItem();
-    item->setCheckState(0, Qt::Unchecked);
-    item->setText(1, "foo");
-    item->setText(2, "bar");
-    tree_->insertTopLevelItem(0, item);
+    item->setText(0, QString::asprintf("%04x", w.addrStart));
+    item->setText(1, viewTypeAsStr(w));
+    item->setText(2, "TODO!!!");
+    tree_->insertTopLevelItem(tree_->topLevelItemCount(), item);
+}
+
+void WatchesWidget::fillTree() {
+    for (const Watch& w : watches_) {
+        appendWatchToTree(w);
+    }
+}
+
+void WatchesWidget::updateTree() {
+    for (int i = 0; i < watches_.size(); i++) {
+        const Watch& w = watches_[i];
+        QTreeWidgetItem* item = tree_->topLevelItem(i);
+        item->setText(2, "TODO!!!");
+    }
 }
 
 void WatchesWidget::onConnected(const MachineState& machineState, const Breakpoints& breakpoints) {
     enableControls(true);
-    fillControls(machineState);
+    memory_ = machineState.memory;
+    fillTree();
 }
 
 void WatchesWidget::onDisconnected() {
-    clearControls();
+    clearTree();
     enableControls(false);
 }
 
@@ -102,11 +144,37 @@ void WatchesWidget::onExecutionResumed() {
 
 void WatchesWidget::onExecutionPaused(const MachineState& machineState) {
     enableControls(true);
+    memory_ = machineState.memory;
+    updateTree();
 }
 
-void WatchesWidget::onMemoryChanged(std::uint16_t addr, std::vector<std::uint8_t> data) {
+void WatchesWidget::onTreeItemSelectionChanged() {
+    auto selectedItems = tree_->selectedItems();
+    removeBtn_->setEnabled(selectedItems.size() == 1);
 }
 
+void WatchesWidget::onAddClicked() {
+    WatchDialog dlg(this);
+    int res = dlg.exec();
+    if (res == QDialog::DialogCode::Accepted) {
+        Watch w = dlg.watch();
+        watches_.push_back(w);
+        appendWatchToTree(w);
+    }
+}
+
+void WatchesWidget::onRemoveClicked() {
+    auto selected = tree_->selectedItems();
+    if (selected.size() != 1) {
+        qDebug() << "WatchesWidget: 'Remove' button clicked, but selection size is " << selected.size() << "... WTF?";
+        return;
+    }
+
+    int idx = tree_->indexOfTopLevelItem(selected[0]);
+    watches_.erase(watches_.begin() + idx);
+    clearTree();
+    fillTree();
+}
 
 
 }

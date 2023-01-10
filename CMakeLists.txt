@@ -35,6 +35,8 @@ set(SHARED_SOURCES
         src/fonts.cpp
         src/dialogs/breakpointdialog.h
         src/dialogs/breakpointdialog.cpp
+        src/dialogs/watchdialog.h
+        src/dialogs/watchdialog.cpp
         src/widgets/breakpointswidget.h
         src/widgets/breakpointswidget.cpp
         src/widgets/disassemblywidget.h
@@ -47,6 +49,7 @@ set(SHARED_SOURCES
         src/widgets/watcheswidget.cpp
         src/machinestate.h
         src/breakpoints.h
+        src/watches.h
         src/viceclient.h
         src/viceclient.cpp
         src/connectionworker.h
@@ -58,7 +61,7 @@ set(SHARED_SOURCES
         src/disassembler.h
         src/disassembler.cpp
         src/mainwindow.cpp
-        src/mainwindow.h        
+        src/mainwindow.h
         src/focuswatcher.h
         src/focuswatcher.cpp
 )

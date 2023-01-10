@@ -24,6 +24,7 @@
 #include <QToolButton>
 
 #include "controller.h"
+#include "watches.h"
 
 namespace vicedebug {
 
@@ -40,14 +41,23 @@ public slots:
     void onDisconnected();
     void onExecutionResumed();
     void onExecutionPaused(const MachineState& machineState);
-    void onMemoryChanged(std::uint16_t addr, std::vector<std::uint8_t> data);
+
+private slots:
+    void onTreeItemSelectionChanged();
+    void onAddClicked();
+    void onRemoveClicked();
 
 private:
     void enableControls(bool enable);
-    void clearControls();
-    void fillControls(const MachineState& machineState);
+    void clearTree();
+    void fillTree();
+    void appendWatchToTree(const Watch& w);
+    void updateTree();
 
     Controller* controller_;
+
+    Watches watches_;
+    std::vector<std::uint8_t> memory_;
 
     QTreeWidget* tree_;
     QToolButton* addBtn_;
