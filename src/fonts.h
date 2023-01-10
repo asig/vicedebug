@@ -29,9 +29,13 @@ class Fonts {
 public:
     static void init();
     static const QFont& robotoMono();
+    static const QFont& c64();
 
 private:
+    static QFont makeFont(const QString& path);
+
     static QFont robotoMono_;
+    static QFont c64_;
 };
 
 }

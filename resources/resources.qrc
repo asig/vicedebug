@@ -423,5 +423,6 @@
         <file>images/codicons/activate-breakpoints.svg</file>
         <file>images/codicons/account.svg</file>
         <file>images/other-icons/connected.svg</file>
+        <file>fonts/C64_Pro_Mono-STYLE.ttf</file>
     </qresource>
 </RCC>

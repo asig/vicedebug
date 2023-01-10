@@ -26,15 +26,24 @@
 namespace vicedebug {
 
 QFont Fonts::robotoMono_;
+QFont Fonts::c64_;
 
 void Fonts::init() {
-    int id = QFontDatabase::addApplicationFont(":/fonts/RobotoMono.ttf");
+    robotoMono_ = makeFont(":/fonts/RobotoMono.ttf");
+    c64_ = makeFont(":/fonts/C64_Pro_Mono-STYLE.ttf");
+}
+
+QFont Fonts::makeFont(const QString& path) {
+    int id = QFontDatabase::addApplicationFont(path);
     QString family = QFontDatabase::applicationFontFamilies(id).at(0);
-    robotoMono_ = QFont(family);
+    return QFont(family);
 }
 
 const QFont& Fonts::robotoMono() {
     return robotoMono_;
 }
 
+const QFont& Fonts::c64() {
+    return c64_;
+}
 }
