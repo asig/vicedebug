@@ -63,10 +63,11 @@ signals:
     void executionPaused(const MachineState& machineState);
     void breakpointsChanged(const Breakpoints& breakpoints);
     void registersChanged(const Registers& registers);
-    void memoryChanged(std::uint16_t address, std::vector<std::uint8_t> data);
+    void memoryChanged(std::uint16_t address, const std::vector<std::uint8_t>& data);
 
 private slots:
     void onStoppedReceived(std::uint16_t pc);
+    void onResumedReceived(std::uint16_t pc);
 
 private:
     Registers registersFromResponse(RegistersResponse response) const;

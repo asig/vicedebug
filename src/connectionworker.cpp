@@ -280,9 +280,20 @@ void ConnectionWorker::handleMessage(std::vector<std::uint8_t> message) {
         r = m;
         break;
     }
-
+    case RESPONSE_EXECUTE_UNTIL_RETURN: {
+        std::shared_ptr<ExecuteUntilReturnResponse> m = std::make_shared<ExecuteUntilReturnResponse>();
+        r = m;
+        break;
+    }
     case RESPONSE_STOPPED: {
         std::shared_ptr<StoppedResponse> m = std::make_shared<StoppedResponse>();
+        vistream is(message.begin() + kHeaderSize);
+        m->pc = is.readU16();
+        r = m;
+        break;
+    }
+    case RESPONSE_RESUMED: {
+        std::shared_ptr<ResumedResponse> m = std::make_shared<ResumedResponse>();
         vistream is(message.begin() + kHeaderSize);
         m->pc = is.readU16();
         r = m;
@@ -307,16 +318,13 @@ void ConnectionWorker::handleMessage(std::vector<std::uint8_t> message) {
         r = m;
         break;
     }
-
     case RESPONSE_CONDITION_SET:
     case RESPONSE_DUMP:
     case RESPONSE_UNDUMP:
     case RESPONSE_RESOURCE_GET:
     case RESPONSE_RESOURCE_SET:
     case RESPONSE_JAM:
-    case RESPONSE_RESUMED:
     case RESPONSE_KEYBOARD_FEED:
-    case RESPONSE_EXECUTE_UNTIL_RETURN:
     case RESPONSE_PING:
     case RESPONSE_DISPLAY_GET:
     case RESPONSE_VICE_INFO:

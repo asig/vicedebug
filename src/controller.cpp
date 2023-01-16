@@ -29,6 +29,7 @@ Controller::Controller(ViceClient* viceClient)
       ignoreStopped_(true)
 {
     connect(viceClient_, &ViceClient::stoppedResponseReceived, this, &Controller::onStoppedReceived);
+    connect(viceClient_, &ViceClient::resumedResponseReceived, this, &Controller::onResumedReceived);
 }
 
 Registers Controller::registersFromResponse(RegistersResponse response) const {
@@ -231,6 +232,14 @@ void Controller::onStoppedReceived(std::uint16_t pc) {
     }
     MachineState machineState = getMachineState();
     emit executionPaused(machineState);
+}
+
+void Controller::onResumedReceived(std::uint16_t pc) {
+//    if (ignoreStopped_) {
+//        qDebug() << "STOPPED received, but should ignore it. Therefore, ignoring it!";
+//    }
+//    MachineState machineState = getMachineState();
+    emit executionResumed();
 }
 
 }

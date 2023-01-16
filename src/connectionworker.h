@@ -201,6 +201,10 @@ struct StoppedResponse : public Response {
     std::uint16_t pc;
 };
 
+struct ResumedResponse : public Response {
+    std::uint16_t pc;
+};
+
 class ResponseSetter {
 public:
     virtual ~ResponseSetter() {};
