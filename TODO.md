@@ -9,6 +9,7 @@
 - [X] Allow modifying memory
 - [ ] "Jump to address" box
 - [ ] switch between uc/graphics and lc/uc fonts (U+EExx vs U+EFxx)
+- [ ] Support different banks
 
 ## Breakpoints Widget
 - [X] Add breakpoint
@@ -18,7 +19,9 @@
 ## Watches Widget
 - [ ] Add
 - [ ] Remove
-- [ ] Different view types (int, uint, hex, text)
+- [ ] Edit
+- [X] Different view types (int, uint, hex, text)
+- [ ] Remove "int hex" variants (they are the same as uint hex)
 
 ## Registers Widget
 - [X] Add register modification
