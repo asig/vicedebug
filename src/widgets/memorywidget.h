@@ -81,6 +81,8 @@ private:
 
     std::vector<std::uint8_t> memory_;
 
+    std::uint32_t petsciiBase_; // 0xee00 for uc/graphics, and 0xef00 for lc/uc
+
     // Edit mode variables
     bool editActive_;
     bool nibbleMode_;

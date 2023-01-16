@@ -20,6 +20,7 @@
 #include "widgets/memorywidget.h"
 
 #include "fonts.h"
+#include "petscii.h"
 
 #include <QEvent>
 #include <QMouseEvent>
@@ -27,6 +28,7 @@
 #include <QPainter>
 #include <QFontDatabase>
 #include <QLineEdit>
+#include <QScrollBar>
 
 #include <iostream>
 
@@ -37,13 +39,17 @@ namespace {
 const int kBytesPerLine = 16;
 const QString kSeparator("  ");
 
-QColor kBg = QColor(Qt::white);
-QColor kBgSelected = QColor(Qt::red);
-QColor kBgDisabled = QColor(Qt::lightGray).lighter(120);
+const QColor kBg = QColor(Qt::white);
+const QColor kBgSelected = QColor(Qt::red);
+const QColor kBgDisabled = QColor(Qt::lightGray).lighter(120);
 
-QColor kFg = QColor(Qt::black);
-QColor kFgSelected = QColor(Qt::yellow);
-QColor kFgDisabled = QColor(Qt::lightGray).lighter(80);
+const QColor kFg = QColor(Qt::black);
+const QColor kFgSelected = QColor(Qt::yellow);
+const QColor kFgDisabled = QColor(Qt::lightGray).lighter(80);
+
+constexpr const std::uint32_t kPetsciiUCBase = 0xee00;
+constexpr const std::uint32_t kPetsciiLCBase = 0xef00;
+
 
 }
 
@@ -90,6 +96,9 @@ MemoryContent::MemoryContent(Controller* controller, QScrollArea* parent) :
     connect(controller_, &Controller::executionResumed, this, &MemoryContent::onExecutionResumed);
     connect(controller_, &Controller::memoryChanged, this, &MemoryContent::onMemoryChanged);
 
+    editActive_ = false;
+    petsciiBase_ = kPetsciiUCBase;
+
     updateSize(0);
 
     enableControls(false);
@@ -100,40 +109,6 @@ MemoryContent::~MemoryContent() {
 
 void MemoryContent::enableControls(bool enable) {
     setEnabled(enable);
-}
-
-std::uint8_t petsciiToScreenCode(std::uint8_t petscii) {
-    // See https://sta.c64.org/cbm64pettoscr.html
-    if (petscii < 32) {
-        return petscii + 128;
-    }
-    if (petscii < 64) {
-        return petscii;
-    }
-    if (petscii < 96) {
-        return petscii - 64;
-    }
-    if (petscii < 128) {
-        return petscii - 32;
-    }
-    if (petscii < 160) {
-        return petscii + 64;
-    }
-    if (petscii < 192) {
-        return petscii - 64;
-    }
-    if (petscii < 224) {
-        return petscii - 128;
-    }
-    if (petscii < 255) {
-        return petscii - 128;
-    }
-    return 94;
-}
-
-std::uint8_t petsciiIsPrint(std::uint8_t petscii) {
-    bool isCtrl = petscii < 32 || (128 <= petscii && petscii < 160);
-    return !isCtrl;
 }
 
 void MemoryContent::paintEvent(QPaintEvent* event) {
@@ -168,7 +143,7 @@ void MemoryContent::paintEvent(QPaintEvent* event) {
             if (pos + i < memory_.size()) {
                 std::uint8_t c = memory_[pos+i];
                 hex = QString::asprintf("%02X ", c);
-                text = petsciiIsPrint(c) ? QString(QChar(0xef00 + petsciiToScreenCode(c))) : ".";
+                text = PETSCII::isPrintable(c) ? QString(QChar(petsciiBase_ + PETSCII::toScreenCode(c))) : ".";
             } else {
                 hex = "   ";
                 text = " ";
@@ -193,7 +168,7 @@ void MemoryContent::paintEvent(QPaintEvent* event) {
             } else {
                 if (pos <= cursorPos_ && cursorPos_ < pos+kBytesPerLine) {
                     char c = (char)memory_[cursorPos_];
-                    text = petsciiIsPrint(c) ? QString(QChar(0xef00 + petsciiToScreenCode(c))) : ".";
+                    text = PETSCII::isPrintable(c) ? QString(QChar(petsciiBase_ + PETSCII::toScreenCode(c))) : ".";
                     painter.setFont(Fonts::c64());
                     painter.drawText(borderW_ + addressW_ + separatorW_ + kBytesPerLine*hexSpaceW_ - hexCharW_ + separatorW_ + (cursorPos_ % kBytesPerLine) * charW_ , y, text);
                 }
@@ -380,7 +355,6 @@ void MemoryContent::keyPressEvent(QKeyEvent* event) {
 void MemoryContent::onConnected(const MachineState& machineState, const Breakpoints& breakpoints) {
     memory_ = machineState.memory;
     updateSize(memory_.size() / kBytesPerLine);
-
     enableControls(true);
 }
 
