@@ -335,6 +335,11 @@ void ViceClient::onOobResponseReceived(std::shared_ptr<Response> r) {
         emit stoppedResponseReceived(sr->pc);
         break;
     }
+    case RESPONSE_RESUMED: {
+        auto sr = std::reinterpret_pointer_cast<ResumedResponse>(r);
+        emit resumedResponseReceived(sr->pc);
+        break;
+    }
     default:
         qDebug() << "OOB Reponse " << r->responseType << "ignored.";
     }

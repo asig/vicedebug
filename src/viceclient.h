@@ -75,6 +75,7 @@ signals:
 
     // Signals that propagate OOB messages
     void stoppedResponseReceived(std::uint16_t pc);
+    void resumedResponseReceived(std::uint16_t pc);
 
 private slots:
     void onOobResponseReceived(std::shared_ptr<Response> r);
