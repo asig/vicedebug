@@ -36,16 +36,16 @@ public:
     explicit WatchesWidget(Controller* controller, QWidget* parent);
     ~WatchesWidget();
 
-public slots:
+private slots:
+    void onTreeItemSelectionChanged();
+    void onTreeItemDoubleClicked();
+    void onAddClicked();
+    void onRemoveClicked();
     void onConnected(const MachineState& machineState, const Breakpoints& breakpoints);
     void onDisconnected();
     void onExecutionResumed();
     void onExecutionPaused(const MachineState& machineState);
-
-private slots:
-    void onTreeItemSelectionChanged();
-    void onAddClicked();
-    void onRemoveClicked();
+    void onMemoryChanged(std::uint16_t address, const std::vector<std::uint8_t>& data);
 
 private:
     void enableControls(bool enable);

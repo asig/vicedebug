@@ -19,6 +19,7 @@
 
 #include "widgets/watcheswidget.h"
 #include "dialogs/watchdialog.h"
+#include "fonts.h"
 
 #include <QGroupBox>
 #include <QHBoxLayout>
@@ -37,6 +38,7 @@ WatchesWidget::WatchesWidget(Controller* controller, QWidget* parent) :
     tree_->setHeaderLabels({ "Address","Type", "Value"} );
     tree_->setSelectionBehavior(QAbstractItemView::SelectRows);
     connect(tree_, &QTreeWidget::itemSelectionChanged, this, &WatchesWidget::onTreeItemSelectionChanged);
+    connect(tree_, &QTreeWidget::doubleClicked, this, &WatchesWidget::onTreeItemDoubleClicked);
 
     addBtn_ = new QToolButton();
     addBtn_->setIcon(QIcon(":/images/codicons/add.svg"));
@@ -61,6 +63,7 @@ WatchesWidget::WatchesWidget(Controller* controller, QWidget* parent) :
     connect(controller_, &Controller::disconnected, this, &WatchesWidget::onDisconnected);
     connect(controller_, &Controller::executionPaused, this, &WatchesWidget::onExecutionPaused);
     connect(controller_, &Controller::executionResumed, this, &WatchesWidget::onExecutionResumed);
+    connect(controller_, &Controller::memoryChanged, this, &WatchesWidget::onMemoryChanged);
 
     enableControls(false);
 }
@@ -109,7 +112,8 @@ void WatchesWidget::appendWatchToTree(const Watch& w) {
     QTreeWidgetItem* item = new QTreeWidgetItem();
     item->setText(0, QString::asprintf("%04x", w.addrStart));
     item->setText(1, viewTypeAsStr(w));
-    item->setText(2, "TODO!!!");
+    item->setText(2, w.asString(memory_));
+    item->setFont(2, Fonts::c64());
     tree_->insertTopLevelItem(tree_->topLevelItemCount(), item);
 }
 
@@ -123,7 +127,7 @@ void WatchesWidget::updateTree() {
     for (int i = 0; i < watches_.size(); i++) {
         const Watch& w = watches_[i];
         QTreeWidgetItem* item = tree_->topLevelItem(i);
-        item->setText(2, "TODO!!!");
+        item->setText(2, w.asString(memory_));
     }
 }
 
@@ -142,6 +146,11 @@ void WatchesWidget::onExecutionResumed() {
     enableControls(false);
 }
 
+void WatchesWidget::onMemoryChanged(std::uint16_t address, const std::vector<std::uint8_t>& data) {
+    memory_ = data;
+    updateTree();
+}
+
 void WatchesWidget::onExecutionPaused(const MachineState& machineState) {
     enableControls(true);
     memory_ = machineState.memory;
@@ -151,6 +160,10 @@ void WatchesWidget::onExecutionPaused(const MachineState& machineState) {
 void WatchesWidget::onTreeItemSelectionChanged() {
     auto selectedItems = tree_->selectedItems();
     removeBtn_->setEnabled(selectedItems.size() == 1);
+}
+
+void WatchesWidget::onTreeItemDoubleClicked() {
+    qDebug() << "IMPLEMENT ME!!!!";
 }
 
 void WatchesWidget::onAddClicked() {

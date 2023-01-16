@@ -72,13 +72,15 @@ void WatchDialog::setupUI() {
     int w = fm.boundingRect("0000").width();
     addrStart_->setFixedWidth(w + 10); // some slack
 
-    connect(addrStart_, &QLineEdit::textChanged, this, &WatchDialog::enableControls);
+    connect(addrStart_, &QLineEdit::textChanged, this, &WatchDialog::onAddrStartChanged);
 
     length_ = new QLineEdit();
     length_->setMaxLength(6);
     fm = length_->fontMetrics();
     w = fm.boundingRect("0000").width();
     length_->setFixedWidth(w + 10); // some slack
+
+    connect(length_, &QLineEdit::textChanged, this, &WatchDialog::onLengthChanged);
 
     viewtype_ = new QComboBox();
     viewtype_->insertItem(0, "int8", QVariant( { QVariant(Watch::ViewType::INT), QVariant(1) } ));
@@ -92,6 +94,8 @@ void WatchDialog::setupUI() {
     viewtype_->insertItem(8, "float", QVariant( { QVariant(Watch::ViewType::FLOAT), QVariant(0) } ));
     viewtype_->insertItem(9, "string", QVariant( { QVariant(Watch::ViewType::CHARS), QVariant(0) } ));
     viewtype_->insertItem(10, "bytes", QVariant( { QVariant(Watch::ViewType::BYTES), QVariant(0) } ));
+
+    connect(viewtype_, &QComboBox::currentIndexChanged, this, &WatchDialog::onViewtypeChanged);
 
     QHBoxLayout* elements = new QHBoxLayout();
     elements->addWidget(new QLabel("Address:"));
@@ -119,19 +123,45 @@ void WatchDialog::setupUI() {
 
     setLayout(vLayout);
 
-    enableControls();
+    onViewtypeChanged(); // Make sure all the relevant field states are set.
 }
 
 Watch WatchDialog::watch() {
     return watch_;
 }
 
-std::uint16_t WatchDialog::parseAddress(QString str, bool& ok) {
+void WatchDialog::onViewtypeChanged() {
+    Watch::ViewType vt = (Watch::ViewType)viewtype_->currentData().toList().at(0).toInt();
+    if (vt == Watch::CHARS || vt == Watch::BYTES) {
+        length_->setEnabled(true);
+    } else {
+        length_->setText("");
+        length_->setEnabled(false);
+    }
+    enableControls();
+}
+
+void WatchDialog::onAddrStartChanged() {
+    enableControls();
+}
+
+void WatchDialog::onLengthChanged() {
+    enableControls();
+}
+
+std::uint16_t WatchDialog::parseInt(QString str, int defaultBase, bool& ok) {
     str = str.trimmed();
-    int base = 16;
+    if (str.length() == 0) {
+        ok = false;
+        return 0;
+    }
+    int base = defaultBase;
     if (str[0] == '+') {
         str = str.mid(1);
         base = 10;
+    } else if (str[0] == '$') {
+        str = str.mid(1);
+        base = 16;
     }
     uint res = str.toUInt(&ok, base);
     if (res > 0xffff) {
@@ -147,7 +177,7 @@ void WatchDialog::enableControls() {
     QString addrStartStr = addrStart_->text().trimmed();
 
     bool ok;
-    std::uint16_t addrStart = parseAddress(addrStartStr, ok);
+    std::uint16_t addrStart = parseInt(addrStartStr, 16, ok);
     if (!ok) {
         okBtn_->setEnabled(false);
         return;
@@ -157,7 +187,7 @@ void WatchDialog::enableControls() {
     Watch::ViewType vt = (Watch::ViewType)viewtype_->currentData().toList().at(0).toInt();
     if (vt == Watch::CHARS || vt == Watch::BYTES) {
         // needs to have a valid length
-        std::uint16_t len = parseAddress(length_->text().trimmed(), ok);
+        std::uint16_t len = parseInt(length_->text().trimmed(), 10, ok);
         if (!ok) {
             okBtn_->setEnabled(false);
             return;
@@ -170,12 +200,12 @@ void WatchDialog::enableControls() {
 void WatchDialog::fillWatch() {
     bool ok;
 
-    watch_.addrStart = parseAddress(addrStart_->text(), ok);
+    watch_.addrStart = parseInt(addrStart_->text(), 16, ok);
     QList<QVariant> attrs = viewtype_->currentData().toList();
     watch_.viewType = (Watch::ViewType)attrs.at(0).toInt();
     watch_.len = attrs.at(1).toInt();
     if (watch_.viewType == Watch::ViewType::BYTES || watch_.viewType == Watch::ViewType::CHARS) {
-        watch_.len = parseAddress(length_->text(), ok);
+        watch_.len = parseInt(length_->text(), 10, ok);
     }
 }
 

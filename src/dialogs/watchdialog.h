@@ -37,9 +37,14 @@ public:
 
     Watch watch();
 
+private slots:
+    void onViewtypeChanged();
+    void onAddrStartChanged();
+    void onLengthChanged();
+
 private:
     void setupUI();
-    std::uint16_t parseAddress(QString str, bool& ok);
+    std::uint16_t parseInt(QString str, int defaultBase, bool& ok);
     void enableControls();
     void fillWatch();
 

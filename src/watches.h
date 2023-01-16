@@ -40,6 +40,8 @@ struct Watch {
     ViewType viewType;
     std::uint16_t addrStart;
     std::uint16_t len;
+
+    QString asString(const std::vector<std::uint8_t>& memory) const;
 };
 
 typedef std::vector<Watch> Watches;
