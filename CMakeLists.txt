@@ -50,6 +50,8 @@ set(SHARED_SOURCES
         src/machinestate.h
         src/breakpoints.h
         src/watches.h
+        src/watches.cpp
+        src/petscii.h
         src/viceclient.h
         src/viceclient.cpp
         src/connectionworker.h
@@ -118,3 +120,18 @@ target_link_libraries(disassembler_test
         Qt${QT_VERSION_MAJOR}::Test
 )
 qt_finalize_executable(disassembler_test)
+
+qt_add_executable(watches_test
+    MANUAL_FINALIZATION
+    test/watches_test.cpp
+    src/watches.h
+    src/watches.cpp
+)
+add_test(NAME watches_test COMMAND watches_test)
+
+target_link_libraries(watches_test
+    PRIVATE
+        Qt${QT_VERSION_MAJOR}::Core
+        Qt${QT_VERSION_MAJOR}::Test
+)
+qt_finalize_executable(watches_test)
