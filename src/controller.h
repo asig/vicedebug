@@ -53,17 +53,17 @@ public:
     void pauseExecution();
     void resumeExecution();
 
-    void writeMemory(std::uint16_t addr, std::uint8_t data);
+    void writeMemory(std::uint16_t bankId, std::uint16_t addr, std::uint8_t data);
 
 signals:
-    void connected(const MachineState& machineState, const Breakpoints& breakpoints);
+    void connected(const MachineState& machineState, const Banks& availableBanks, const Breakpoints& breakpoints);
     void connectionFailed();
     void disconnected();
     void executionResumed();
     void executionPaused(const MachineState& machineState);
     void breakpointsChanged(const Breakpoints& breakpoints);
     void registersChanged(const Registers& registers);
-    void memoryChanged(std::uint16_t address, const std::vector<std::uint8_t>& data);
+    void memoryChanged(std::uint16_t bankId, std::uint16_t address, const std::vector<std::uint8_t>& data);
 
 private slots:
     void onStoppedReceived(std::uint16_t pc);
@@ -82,6 +82,7 @@ private:
     bool connected_;
     ViceClient* viceClient_;
     std::map<std::uint32_t, Breakpoint> breakpoints_;
+    Banks availableBanks_;
 };
 
 }

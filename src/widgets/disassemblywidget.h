@@ -61,13 +61,13 @@ protected:
 //    void resizeEvent(QResizeEvent* event) override;
 
 public slots:
-    void onConnected(const MachineState& machineState, const Breakpoints& breakpoints);
+    void onConnected(const MachineState& machineState, const Banks& banks, const Breakpoints& breakpoints);
     void onDisconnected();
     void onExecutionResumed();
     void onExecutionPaused(const MachineState& machineState);
     void onBreakpointsChanged(const Breakpoints& breakpoints);
     void onRegistersChanged(const Registers& registers);
-    void onMemoryChanged(std::uint16_t addr, std::vector<std::uint8_t> data);
+    void onMemoryChanged(std::uint16_t bankId, std::uint16_t addr, std::vector<std::uint8_t> data);
 
 private:
     void paintLine(QPainter& painter, const QRect& updateRect, int line);

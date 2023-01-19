@@ -112,7 +112,7 @@ void WatchesWidget::appendWatchToTree(const Watch& w) {
     QTreeWidgetItem* item = new QTreeWidgetItem();
     item->setText(0, QString::asprintf("%04x", w.addrStart));
     item->setText(1, viewTypeAsStr(w));
-    item->setText(2, w.asString(memory_));
+    item->setText(2, w.asString(memory_)); // FIXME use
     item->setFont(2, Fonts::c64());
     tree_->insertTopLevelItem(tree_->topLevelItemCount(), item);
 }
@@ -131,7 +131,7 @@ void WatchesWidget::updateTree() {
     }
 }
 
-void WatchesWidget::onConnected(const MachineState& machineState, const Breakpoints& breakpoints) {
+void WatchesWidget::onConnected(const MachineState& machineState, const Banks& banks, const Breakpoints& breakpoints) {
     enableControls(true);
     memory_ = machineState.memory;
     fillTree();
@@ -146,8 +146,11 @@ void WatchesWidget::onExecutionResumed() {
     enableControls(false);
 }
 
-void WatchesWidget::onMemoryChanged(std::uint16_t address, const std::vector<std::uint8_t>& data) {
-    memory_ = data;
+void WatchesWidget::onMemoryChanged(std::uint16_t bankId, std::uint16_t address, const std::vector<std::uint8_t>& data) {
+    std::vector<std::uint8_t>& mem = memory_.at(bankId);
+    for (auto b : data) {
+        mem[address++] = b;
+    }
     updateTree();
 }
 

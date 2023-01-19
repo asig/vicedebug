@@ -59,11 +59,11 @@ protected:
     void keyPressEvent(QKeyEvent* event) override;
 
 public slots:
-    void onConnected(const MachineState& machineState, const Breakpoints& breakpoints);
+    void onConnected(const MachineState& machineState, const Banks& banks, const Breakpoints& breakpoints);
     void onDisconnected();
     void onExecutionResumed();
     void onExecutionPaused(const MachineState& machineState);
-    void onMemoryChanged(std::uint16_t addr, std::vector<std::uint8_t> data);
+    void onMemoryChanged(std::uint16_t bankId, std::uint16_t addr, std::vector<std::uint8_t> data);
 
 private:
     void enableControls(bool enable);
@@ -79,7 +79,9 @@ private:
     Controller* controller_;
     QScrollArea* scrollArea_;
 
-    std::vector<std::uint8_t> memory_;
+    std::unordered_map<std::uint16_t, std::vector<std::uint8_t>> memory_;
+    Banks banks_;
+    std::uint16_t selectedBankId_;
 
     std::uint32_t petsciiBase_; // 0xee00 for uc/graphics, and 0xef00 for lc/uc
 

@@ -22,6 +22,9 @@
 - [ ] Edit
 - [X] Different view types (int, uint, hex, text)
 - [ ] Remove "int hex" variants (they are the same as uint hex)
+- [ ] Support banks
+      - [ ] in Watches Dialog
+      - [ ] in Watches
 
 ## Registers Widget
 - [X] Add register modification
