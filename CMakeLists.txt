@@ -29,7 +29,7 @@ find_package(Qt6
 
 include_directories(src)
 
-set(SHARED_SOURCES
+set(PROJECT_SOURCES
         resources/resources.qrc
         src/fonts.h
         src/fonts.cpp
@@ -66,16 +66,12 @@ set(SHARED_SOURCES
         src/mainwindow.h
         src/focuswatcher.h
         src/focuswatcher.cpp
-)
-
-set(PROJECT_SOURCES
         src/main.cpp
 )
 
 qt_add_executable(vicedebug
     MANUAL_FINALIZATION
     ${PROJECT_SOURCES}
-    ${SHARED_SOURCES}
 )
 
 target_link_libraries(vicedebug
@@ -108,15 +104,14 @@ enable_testing(true)
 qt_add_executable(disassembler_test
     MANUAL_FINALIZATION
     test/disassembler_test.cpp
-    ${SHARED_SOURCES}
+    src/disassembler.h
+    src/disassembler.cpp
 )
 add_test(NAME disassembler_test COMMAND disassembler_test)
 
 target_link_libraries(disassembler_test
     PRIVATE
         Qt${QT_VERSION_MAJOR}::Core
-        Qt${QT_VERSION_MAJOR}::Network
-        Qt${QT_VERSION_MAJOR}::Widgets
         Qt${QT_VERSION_MAJOR}::Test
 )
 qt_finalize_executable(disassembler_test)
