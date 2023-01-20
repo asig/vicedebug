@@ -7,9 +7,13 @@
 
 ## Memory Widget
 - [X] Allow modifying memory
+- [ ] Toolbar
+      - [ ] "Jump to address" box
+      - [ ] switch between uc/graphics and lc/uc fonts (U+EExx vs U+EFxx)
+      - [ ] allow to select bank
 - [ ] "Jump to address" box
 - [ ] switch between uc/graphics and lc/uc fonts (U+EExx vs U+EFxx)
-- [ ] Support different banks
+- [X] Support different banks
 
 ## Breakpoints Widget
 - [X] Add breakpoint
@@ -30,10 +34,14 @@
 - [X] Add register modification
 
 ## Other stuff
+- [ ] Derive system we're debugging from VICE resopnses
 - [ ] Use different colors for icons in toolbar menu
 - [ ] Add "Connect" and "Quick connect" menu
 - [ ] Add About box
 - [ ] add sprite viewer (all sprites, currently active sprites)
 - [ ] Font viewer (currently installed font)
 - [ ] Screen viewer (currently active screen)
-  
+
+## Make it look good
+### Windows
+- [ ] Font size for watches and breakpoints

@@ -23,6 +23,7 @@
 
 #include <QPlainTextEdit>
 #include <QScrollArea>
+#include <QComboBox>
 
 #include "controller.h"
 
@@ -31,7 +32,7 @@ namespace vicedebug {
 class MemoryContent;
 
 
-class MemoryWidget : public QScrollArea {
+class MemoryWidget : public QWidget {
     Q_OBJECT
 
 public:
@@ -41,24 +42,7 @@ public:
 protected:
 //    void resizeEvent(QResizeEvent* event) override;
 
-private:
-    MemoryContent* content_;
-};
-
-class MemoryContent : public QWidget {
-    Q_OBJECT
-
-public:
-    MemoryContent(Controller* controller, QScrollArea* parent);
-    virtual ~MemoryContent();
-
-protected:
-    void paintEvent(QPaintEvent* event) override;
-    void mousePressEvent(QMouseEvent* event) override;
-    void focusOutEvent(QFocusEvent* event) override;
-    void keyPressEvent(QKeyEvent* event) override;
-
-public slots:
+private slots:
     void onConnected(const MachineState& machineState, const Banks& banks, const Breakpoints& breakpoints);
     void onDisconnected();
     void onExecutionResumed();
@@ -66,7 +50,36 @@ public slots:
     void onMemoryChanged(std::uint16_t bankId, std::uint16_t addr, std::vector<std::uint8_t> data);
 
 private:
-    void enableControls(bool enable);
+    Controller* controller_;
+
+    QComboBox* bankCombo_;
+    QScrollArea* scrollArea_;
+    MemoryContent* content_;
+
+    int selectedBank_;
+    std::unordered_map<std::uint16_t, std::vector<std::uint8_t>> memory_;
+};
+
+class MemoryContent : public QWidget {
+    Q_OBJECT
+
+public:
+    MemoryContent(QScrollArea* parent);
+    virtual ~MemoryContent();
+
+public:
+    void setMemory(const std::vector<std::uint8_t>& memory);
+
+signals:
+    void memoryChanged(std::uint16_t addr, std::uint8_t newVal);
+
+protected:
+    void paintEvent(QPaintEvent* event) override;
+    void mousePressEvent(QMouseEvent* event) override;
+    void focusOutEvent(QFocusEvent* event) override;
+    void keyPressEvent(QKeyEvent* event) override;
+
+private:
     void updateSize(int lines);
 
     void maybeEnterNibbleEditMode(int x, int y);
@@ -79,8 +92,7 @@ private:
     Controller* controller_;
     QScrollArea* scrollArea_;
 
-    std::unordered_map<std::uint16_t, std::vector<std::uint8_t>> memory_;
-    Banks banks_;
+    std::vector<std::uint8_t> memory_;
     std::uint16_t selectedBankId_;
 
     std::uint32_t petsciiBase_; // 0xee00 for uc/graphics, and 0xef00 for lc/uc

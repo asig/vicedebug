@@ -29,6 +29,9 @@
 #include <QFontDatabase>
 #include <QLineEdit>
 #include <QScrollBar>
+#include <QComboBox>
+#include <QHBoxLayout>
+#include <QLabel>
 
 #include <iostream>
 
@@ -53,24 +56,106 @@ constexpr const std::uint32_t kPetsciiLCBase = 0xef00;
 }
 
 MemoryWidget::MemoryWidget(Controller* controller, QWidget* parent) :
-    QScrollArea(parent) {
+    controller_(controller), QWidget(parent) {
 
-    setBackgroundRole(QPalette::Dark);
-    content_ = new MemoryContent(controller, this);
-    setWidgetResizable(true);
-    setWidget(content_);
+//    setBackgroundRole(QPalette::Dark);
 
-    connect(controller, &Controller::connected, this, [this]() { this->setEnabled(true);} );
-    connect(controller, &Controller::disconnected, this, [this]() { this->setEnabled(false);} );
-    connect(controller, &Controller::executionPaused, this, [this]() { this->setEnabled(true);} );
-    connect(controller, &Controller::executionResumed, this, [this]() { this->setEnabled(false);} );
+    connect(controller_, &Controller::connected, this, [this]() { setEnabled(true);} );
+    connect(controller_, &Controller::disconnected, this, [this]() { setEnabled(false);} );
+    connect(controller_, &Controller::executionPaused, this, [this]() { setEnabled(true);} );
+    connect(controller_, &Controller::executionResumed, this, [this]() { setEnabled(false);} );
+
+    // Set up memory content
+    scrollArea_ = new QScrollArea(this);
+    content_ = new MemoryContent(scrollArea_);
+    connect(content_, &MemoryContent::memoryChanged, this, [this](std::uint16_t addr, std::uint8_t val) {
+        controller_->writeMemory(selectedBank_, addr, val);
+    });
+    scrollArea_->setWidgetResizable(true);
+    scrollArea_->setWidget(content_);
+
+    // Set up "toolbar"
+    bankCombo_ = new QComboBox();
+    connect(bankCombo_, &QComboBox::currentIndexChanged, [this](int index) {
+        selectedBank_ = index;
+        if (selectedBank_ < memory_.size()) {
+            content_->setMemory(memory_.at(selectedBank_));
+        }
+    });
+    QHBoxLayout* toolbar = new QHBoxLayout();
+    toolbar->addWidget(new QLabel("Bank:"));
+    toolbar->addWidget(bankCombo_);
+    toolbar->addStretch();
+
+    // Set up final layout
+    QVBoxLayout* layout = new QVBoxLayout();
+    layout->addLayout(toolbar);
+    layout->addWidget(scrollArea_);
+
+    setLayout(layout);
+
+    connect(controller, &Controller::connected, this, &MemoryWidget::onConnected);
+    connect(controller, &Controller::disconnected, this, &MemoryWidget::onDisconnected);
+    connect(controller, &Controller::executionPaused, this, &MemoryWidget::onExecutionPaused);
+    connect(controller, &Controller::executionResumed, this, &MemoryWidget::onExecutionResumed);
+    connect(controller, &Controller::memoryChanged, this, &MemoryWidget::onMemoryChanged);
+
+    setEnabled(false);
 }
 
 MemoryWidget::~MemoryWidget() {
 }
 
-MemoryContent::MemoryContent(Controller* controller, QScrollArea* parent) :
-    QWidget(parent), controller_(controller), scrollArea_(parent)
+void MemoryWidget::onConnected(const MachineState& machineState, const Banks& banks, const Breakpoints& breakpoints) {
+    bankCombo_->clear();
+    for (Bank b : banks) {
+        bankCombo_->addItem(b.name.c_str(), QVariant(b.id));
+    }
+    selectedBank_ = 0;
+    bankCombo_->setCurrentIndex(0);
+
+    memory_ = machineState.memory;
+    content_->setMemory(memory_.at(selectedBank_));
+//    content_->setEnabled(true);
+    setEnabled(true);
+}
+
+void MemoryWidget::onDisconnected() {
+    memory_.clear();
+    content_->setMemory({});
+    setEnabled(false);
+}
+
+void MemoryWidget::onExecutionResumed() {
+    // enableControls() seems to change the scroll position when the user was editing contents.
+    // As a workaround, remember and restore scroll positions.
+    int vert = scrollArea_->verticalScrollBar()->value();
+    int hor = scrollArea_->horizontalScrollBar()->value();
+
+    setEnabled(false);
+
+    scrollArea_->verticalScrollBar()->setValue(vert);
+    scrollArea_->horizontalScrollBar()->setValue(hor);
+}
+
+void MemoryWidget::onExecutionPaused(const MachineState& machineState) {
+    memory_ = machineState.memory;
+    content_->setMemory(memory_.at(selectedBank_));
+    setEnabled(true);
+    update();
+}
+
+void MemoryWidget::onMemoryChanged(std::uint16_t bankId, std::uint16_t addr, std::vector<std::uint8_t> data) {
+    std::vector<std::uint8_t>& mem = memory_.at(bankId);
+    for (auto b : data) {
+        mem[addr++] = b;
+    }
+    content_->setMemory(memory_.at(selectedBank_));
+}
+
+
+MemoryContent::MemoryContent(QScrollArea* parent) :
+    QWidget(parent), scrollArea_(parent)
 {
     setFocusPolicy(Qt::StrongFocus);
 
@@ -88,26 +173,26 @@ MemoryContent::MemoryContent(Controller* controller, QScrollArea* parent) :
 
     lineH_ = c64fm.height() > robotofm.height() ? c64fm.height() : robotofm.height();
 
-    connect(controller_, &Controller::connected, this, &MemoryContent::onConnected);
-    connect(controller_, &Controller::disconnected, this, &MemoryContent::onDisconnected);
-    connect(controller_, &Controller::executionPaused, this, &MemoryContent::onExecutionPaused);
-    connect(controller_, &Controller::executionResumed, this, &MemoryContent::onExecutionResumed);
-    connect(controller_, &Controller::memoryChanged, this, &MemoryContent::onMemoryChanged);
-
     editActive_ = false;
     petsciiBase_ = kPetsciiUCBase;
 
     updateSize(0);
 
-    enableControls(false);
+//    enableControls(false);
 }
 
 MemoryContent::~MemoryContent() {
 }
 
-void MemoryContent::enableControls(bool enable) {
-    setEnabled(enable);
+void MemoryContent::setMemory(const std::vector<std::uint8_t>& memory) {
+    memory_ = memory;
+    updateSize(memory_.size() / kBytesPerLine);
+    update();
 }
+
+//void MemoryContent::enableControls(bool enable) {
+//    setEnabled(enable);
+//}
 
 void MemoryContent::paintEvent(QPaintEvent* event) {
     QPainter painter(this);
@@ -125,7 +210,7 @@ void MemoryContent::paintEvent(QPaintEvent* event) {
     painter.setBackground(QBrush(bg));
     painter.fillRect(event->rect(), bg);
 
-    int memSize = memory_.size() > 0 ? memory_.at(0).size() : 0;
+    int memSize = memory_.size() > 0 ? memory_.size() : 0;
     QString sep("  ");
     const char* addrFormatString = memSize <= 0x10000 ? " %04X" : "%05X";
     for (int pos = firstLine * kBytesPerLine, y = firstLine*lineH_+ascent_; pos < (lastLine + 1) * kBytesPerLine; pos += kBytesPerLine, y += lineH_) {
@@ -140,7 +225,7 @@ void MemoryContent::paintEvent(QPaintEvent* event) {
             QString hex;
             QString text;
             if (pos + i < memSize) {
-                std::uint8_t c = memory_.at(selectedBankId_)[pos+i];
+                std::uint8_t c = memory_[pos+i];
                 hex = QString::asprintf("%02X ", c);
                 text = PETSCII::isPrintable(c) ? QString(QChar(petsciiBase_ + PETSCII::toScreenCode(c))) : ".";
             } else {
@@ -160,13 +245,13 @@ void MemoryContent::paintEvent(QPaintEvent* event) {
             if (nibbleMode_) {
                 if (pos <= cursorPos_/2 && cursorPos_/2 < pos+kBytesPerLine) {
                     int x = borderW_ + addressW_ + separatorW_ + ((cursorPos_/2) % kBytesPerLine) * hexSpaceW_ + (cursorPos_ % 2) * hexCharW_;
-                    text = QString::asprintf("%02X",memory_.at(selectedBankId_)[cursorPos_/2]).mid((cursorPos_ % 2),1);
+                    text = QString::asprintf("%02X",memory_[cursorPos_/2]).mid((cursorPos_ % 2),1);
                     painter.setFont(Fonts::robotoMono());
                     painter.drawText(x, y, text);
                 }
             } else {
                 if (pos <= cursorPos_ && cursorPos_ < pos+kBytesPerLine) {
-                    char c = (char)memory_.at(selectedBankId_)[cursorPos_];
+                    char c = (char)memory_[cursorPos_];
                     text = PETSCII::isPrintable(c) ? QString(QChar(petsciiBase_ + PETSCII::toScreenCode(c))) : ".";
                     painter.setFont(Fonts::c64());
                     painter.drawText(borderW_ + addressW_ + separatorW_ + kBytesPerLine*hexSpaceW_ - hexCharW_ + separatorW_ + (cursorPos_ % kBytesPerLine) * charW_ , y, text);
@@ -216,7 +301,7 @@ void MemoryContent::maybeEnterNibbleEditMode(int x, int y) {
 
     int line = y/lineH_;
     int bytePos = line * kBytesPerLine + byteOfs;
-    if (bytePos >= memory_.at(selectedBankId_).size()) {
+    if (bytePos >= memory_.size()) {
         // Out of bounds
         return;
     }
@@ -231,7 +316,7 @@ void MemoryContent::maybeEnterByteEditMode(int x, int y) {
     x /= charW_; // x is now the "character pos"
     int line = y/lineH_;
     int bytePos = line * kBytesPerLine + x;
-    if (bytePos >= memory_.at(selectedBankId_).size()) {
+    if (bytePos >= memory_.size()) {
         // Out of bounds
         return;
     }
@@ -259,7 +344,7 @@ int charToHex(char c) {
 }
 
 void MemoryContent::moveCursorRight() {
-    int maxPos = memory_.at(selectedBankId_).size() * (nibbleMode_ ? 2 : 1);
+    int maxPos = memory_.size() * (nibbleMode_ ? 2 : 1);
     if (cursorPos_ < maxPos) {
         cursorPos_++;
     }
@@ -311,7 +396,7 @@ void MemoryContent::keyPressEvent(QKeyEvent* event) {
         break;
     }
     case Qt::Key_Down: {
-        int maxPos = memory_.at(selectedBankId_).size() * (nibbleMode_ ? 2 : 1);
+        int maxPos = memory_.size() * (nibbleMode_ ? 2 : 1);
         int delta = kBytesPerLine * (nibbleMode_ ? 2 : 1);
         if (cursorPos_ + delta < maxPos) {
             cursorPos_ += delta;
@@ -331,11 +416,11 @@ void MemoryContent::keyPressEvent(QKeyEvent* event) {
             std::uint8_t mask = 0xf;
             std::uint8_t shift = cursorPos_%2 == 0 ? 4 : 0;
 
-            std::uint8_t oldVal = memory_.at(selectedBankId_)[cursorPos_/2];
+            std::uint8_t oldVal = memory_[cursorPos_/2];
             std::uint8_t newVal = oldVal & ~(mask<<shift) | (v<<shift);
             int addr = cursorPos_/2;
             // memory and view will be updated in onMemoryChanged();
-            controller_->writeMemory(selectedBankId_, addr, newVal);
+            emit memoryChanged(addr, newVal);
             moveCursorRight();
         }
     } else {
@@ -344,56 +429,17 @@ void MemoryContent::keyPressEvent(QKeyEvent* event) {
             std::uint8_t v = text.toStdString()[0];
             int addr = cursorPos_;
             // memory and view will be updated in onMemoryChanged();
-            controller_->writeMemory(selectedBankId_, addr, v);
+            emit memoryChanged(addr, v);
             moveCursorRight();
         }
     }
 
 }
 
-void MemoryContent::onConnected(const MachineState& machineState, const Banks& banks, const Breakpoints& breakpoints) {
-    banks_ = banks;
-    memory_ = machineState.memory;
-    updateSize(memory_.at(selectedBankId_).size() / kBytesPerLine);
-    enableControls(true);
-}
-
 void MemoryContent::updateSize(int lines) {
     int w = borderW_ + addressW_ + separatorW_ + kBytesPerLine * hexSpaceW_ - hexCharW_ + separatorW_ + kBytesPerLine * charW_ + borderW_;
     int h = lines * lineH_;
     setMinimumSize(w, h);
-}
-
-void MemoryContent::onDisconnected() {
-    memory_.clear();
-    updateSize(0);
-    enableControls(false);
-}
-
-void MemoryContent::onExecutionResumed() {
-    // enableControls() seems to change the scroll position when the user was editing contents.
-    // As a workaround, remember and restore scroll positions.
-    int vert = scrollArea_->verticalScrollBar()->value();
-    int hor = scrollArea_->horizontalScrollBar()->value();
-
-    enableControls(false);
-
-    scrollArea_->verticalScrollBar()->setValue(vert);
-    scrollArea_->horizontalScrollBar()->setValue(hor);
-}
-
-void MemoryContent::onExecutionPaused(const MachineState& machineState) {
-    memory_ = machineState.memory;
-    enableControls(true);
-    update();
-}
-
-void MemoryContent::onMemoryChanged(std::uint16_t bankId, std::uint16_t addr, std::vector<std::uint8_t> data) {
-    std::vector<std::uint8_t>& mem = memory_.at(bankId);
-    for (auto b : data) {
-        mem[addr++] = b;
-    }
-    update();
 }
 
 }
