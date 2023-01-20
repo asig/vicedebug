@@ -10,7 +10,7 @@
 - [ ] Toolbar
       - [ ] "Jump to address" box
       - [ ] switch between uc/graphics and lc/uc fonts (U+EExx vs U+EFxx)
-      - [ ] allow to select bank
+      - [X] allow to select bank
 - [ ] "Jump to address" box
 - [ ] switch between uc/graphics and lc/uc fonts (U+EExx vs U+EFxx)
 - [X] Support different banks
