@@ -44,25 +44,27 @@ Registers Controller::registersFromResponse(RegistersResponse response) const {
 }
 
 MachineState Controller::getMachineState() {    
-    // Get memory and registers
-    qDebug() << QThread::currentThreadId() << "**** Getting memory";
-    auto getMemResponseFuture = viceClient_->memGet(0, 0xffff, MemSpace::MAIN_MEMORY, 0, false);
-    if (!getMemResponseFuture.isFinished()) {
-        qDebug() << QThread::currentThreadId() << "**** Waiting for memory";
-        getMemResponseFuture.waitForFinished();
-    }
-    auto getMemResponse = getMemResponseFuture.result();
-    qDebug() << QThread::currentThreadId() << "**** Got memory";
+    MachineState machineState;
 
-    qDebug() << QThread::currentThreadId() << "**** Getting registers";
+    // Get memory for all banks
+    std::unordered_map<std::uint16_t, QFuture<MemGetResponse>> memGetResponseFutures;
+    for (const auto& p : availableBanks_) {
+        memGetResponseFutures[p.id] = viceClient_->memGet(0, 0xffff, MemSpace::MAIN_MEMORY, p.id, false);
+    }
+    for (auto& p : memGetResponseFutures) {
+        p.second.waitForFinished();
+        machineState.memory.insert({p.first, p.second.result().memory});
+    }
+
+    // Get registers
+    auto getMemResponseFuture = viceClient_->memGet(0, 0xffff, MemSpace::MAIN_MEMORY, 0, false);
+    getMemResponseFuture.waitForFinished();
+    auto getMemResponse = getMemResponseFuture.result();
+
     auto registersResponseFuture = viceClient_->registersGet(MemSpace::MAIN_MEMORY);
-    qDebug() << QThread::currentThreadId() << "**** Waiting for registers";
     registersResponseFuture.waitForFinished();
     auto registersResponse = registersResponseFuture.result();
-    qDebug() << QThread::currentThreadId() << "**** Got registers";
 
-    MachineState machineState;
-    machineState.memory = getMemResponse.memory;
     machineState.regs = registersFromResponse(registersResponse);
 
     return machineState;
@@ -87,10 +89,15 @@ void Controller::connectToVice(QString host, int port) {
     auto banksAvailableResponseFuture = viceClient_->banksAvailable();
     banksAvailableResponseFuture.waitForFinished();
     auto banksAvailableResponse = banksAvailableResponseFuture.result();
-    qDebug() << "Got banks:";
-    for (auto p : banksAvailableResponse.banks) {
+    availableBanks_.clear();
+    qDebug() << "Available banks:";
+    for (const auto& p : banksAvailableResponse.banks) {
+        availableBanks_.push_back(Bank{p.first, p.second});
         qDebug() << "    " << p.first << ": " << p.second.c_str();
     }
+    std::sort(availableBanks_.begin(), availableBanks_.end(), [](const Bank& b1, const Bank& b2) {
+        return b1.id < b2.id;
+    });
 
     auto checkpointListResponseFuture = viceClient_->checkpointList();
     checkpointListResponseFuture.waitForFinished();
@@ -112,7 +119,7 @@ void Controller::connectToVice(QString host, int port) {
 
     MachineState machineState = getMachineState();
     ignoreStopped_ = true;
-    emit connected(machineState, breakpoints);   
+    emit connected(machineState, availableBanks_, breakpoints);
 }
 
 void Controller::disconnect() {
@@ -213,16 +220,16 @@ void Controller::resumeExecution() {
     emit executionResumed();
 }
 
-void Controller::writeMemory(std::uint16_t addr, std::uint8_t data) {
+void Controller::writeMemory(std::uint16_t bankId, std::uint16_t addr, std::uint8_t data) {
     std::vector<std::uint8_t> vals { data };
-    auto memSetResponseFuture = viceClient_->memSet(addr, MAIN_MEMORY, 0, false, vals);
+    auto memSetResponseFuture = viceClient_->memSet(addr, MAIN_MEMORY, bankId, false, vals);
     memSetResponseFuture.waitForFinished();
 
-    auto memGetResponseFuture = viceClient_->memGet(addr, addr, MAIN_MEMORY, 0, false);
+    auto memGetResponseFuture = viceClient_->memGet(addr, addr, MAIN_MEMORY, bankId, false);
     memGetResponseFuture.waitForFinished();
     auto memGetResponse = memGetResponseFuture.result();
 
-    emit memoryChanged(addr, memGetResponse.memory);
+    emit memoryChanged(bankId, addr, memGetResponse.memory);
 }
 
 

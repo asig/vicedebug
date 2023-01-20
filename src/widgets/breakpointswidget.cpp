@@ -124,7 +124,7 @@ void BreakpointsWidget::fillTree(const Breakpoints& breakpoints) {
     }
 }
 
-void BreakpointsWidget::onConnected(const MachineState& machineState, const Breakpoints& breakpoints) {
+void BreakpointsWidget::onConnected(const MachineState& machineState, const Banks& banks, const Breakpoints& breakpoints) {
     qDebug() << "BreakpointsWidget::onConnected called";
     enableControls(true);    
     fillTree(breakpoints);

@@ -21,8 +21,17 @@
 
 #include <vector>
 #include <cstdint>
+#include <string>
+#include <unordered_map>
 
 namespace vicedebug {
+
+struct Bank {
+    std::uint16_t id;
+    std::string name;
+};
+
+typedef std::vector<Bank> Banks;
 
 struct Registers {
     constexpr static const std::uint8_t kRegAId = 0;
@@ -41,7 +50,7 @@ struct Registers {
 };
 
 struct MachineState {
-    std::vector<std::uint8_t> memory;
+    std::unordered_map<std::uint16_t, std::vector<std::uint8_t>> memory;
     Registers regs;
 };
 

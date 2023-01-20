@@ -253,9 +253,9 @@ void DisassemblyContent::enableControls(bool enable) {
     setEnabled(enable);
 }
 
-void DisassemblyContent::onConnected(const MachineState& machineState, const Breakpoints& breakpoints) {
+void DisassemblyContent::onConnected(const MachineState& machineState, const Banks& banks, const Breakpoints& breakpoints) {
     qDebug() << "DisassemblyWidget::onConnected called";
-    memory_ = machineState.memory;
+    memory_ = machineState.memory.at(0); // default bank
     pc_ = machineState.regs.pc;
     updateDisassembly();
     this->setMinimumHeight(lines_.size() * lineH_);
@@ -279,7 +279,7 @@ void DisassemblyContent::onExecutionResumed() {
 
 void DisassemblyContent::onExecutionPaused(const MachineState& machineState) {
     qDebug() << "DisassemblyWidget::onExecutionPaused called";
-    memory_ = machineState.memory;
+    memory_ = machineState.memory.at(0); // default bank
     pc_ = machineState.regs.pc;
     updateDisassembly();
 
@@ -382,7 +382,7 @@ void DisassemblyContent::highlightLine(int line) {
     scrollArea_->ensureVisible(x, y, 0, 50);
 }
 
-void DisassemblyContent::onMemoryChanged(std::uint16_t addr, std::vector<std::uint8_t> data) {
+void DisassemblyContent::onMemoryChanged(std::uint16_t bankId, std::uint16_t addr, std::vector<std::uint8_t> data) {
     for (auto b : data) {
         memory_[addr++] = b;
     }

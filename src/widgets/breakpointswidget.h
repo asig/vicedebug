@@ -45,7 +45,7 @@ public:
     ~BreakpointsWidget();
 
 public slots:
-    void onConnected(const MachineState& machineState, const Breakpoints& breakpoints);
+    void onConnected(const MachineState& machineState, const Banks& banks, const Breakpoints& breakpoints);
     void onDisconnected();
     void onExecutionResumed();
     void onExecutionPaused(const MachineState& machineState);

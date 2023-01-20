@@ -200,7 +200,7 @@ void RegistersWidget::onFocusLost() {
     }
 }
 
-void RegistersWidget::onConnected(const MachineState& machineState, const Breakpoints& breakpoints) {
+void RegistersWidget::onConnected(const MachineState& machineState, const Banks& banks, const Breakpoints& breakpoints) {
     regs_ = machineState.regs;
     fillControls();
     enableControls(true);

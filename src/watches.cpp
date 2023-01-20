@@ -103,22 +103,23 @@ QString cbmDoubleToString(double d) {
 
 }
 
-QString Watch::asString(const std::vector<std::uint8_t>& memory) const {
+QString Watch::asString(const std::unordered_map<std::uint16_t, std::vector<std::uint8_t>>& memory) const {
+    const std::vector<std::uint8_t>& mem = memory.at(0); // TODO use banks!
     switch(viewType) {
     case INT:
-        return QString::asprintf("%d", readInt(memory, addrStart, len));
+        return QString::asprintf("%d", readInt(mem, addrStart, len));
     case INT_HEX:
-        return QString::asprintf(QString::asprintf("%%0%dx", len*2).toStdString().c_str(), readUInt(memory, addrStart, len));
+        return QString::asprintf(QString::asprintf("%%0%dx", len*2).toStdString().c_str(), readUInt(mem, addrStart, len));
     case UINT:
-        return QString::asprintf("%d", readUInt(memory, addrStart, len));
+        return QString::asprintf("%d", readUInt(mem, addrStart, len));
     case UINT_HEX:
-        return QString::asprintf(QString::asprintf("%%0%dx", len*2).toStdString().c_str(), readUInt(memory, addrStart, len));
+        return QString::asprintf(QString::asprintf("%%0%dx", len*2).toStdString().c_str(), readUInt(mem, addrStart, len));
     case FLOAT:
-        return cbmDoubleToString(readFloat(memory, addrStart));
+        return cbmDoubleToString(readFloat(mem, addrStart));
     case CHARS:
-        return readString(memory, addrStart, len);
+        return readString(mem, addrStart, len);
     case BYTES:
-        return readBytes(memory, addrStart, len);
+        return readBytes(mem, addrStart, len);
     }
     return "WTF???";
 };
