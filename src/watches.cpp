@@ -62,7 +62,6 @@ double readFloat(const std::vector<std::uint8_t>& memory, std::uint16_t addr) {
     return res;
 }
 
-
 QString readString(const std::vector<std::uint8_t>& memory, std::uint16_t addr, int len) {
     QString res;
     while (len-- > 0) {
@@ -108,8 +107,6 @@ QString Watch::asString(const std::unordered_map<std::uint16_t, std::vector<std:
     switch(viewType) {
     case INT:
         return QString::asprintf("%d", readInt(mem, addrStart, len));
-    case INT_HEX:
-        return QString::asprintf(QString::asprintf("%%0%dx", len*2).toStdString().c_str(), readUInt(mem, addrStart, len));
     case UINT:
         return QString::asprintf("%d", readUInt(mem, addrStart, len));
     case UINT_HEX:

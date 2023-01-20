@@ -39,13 +39,6 @@ private slots:
         QCOMPARE((Watch{ Watch::ViewType::INT, 2, 1}.asString(memory)), "-127");
     }
 
-    void testInt8HexAsString() {
-        std::unordered_map<std::uint16_t, std::vector<std::uint8_t>> memory = { {0, { 0x7f, 0x80, 0x81 } } };
-        QCOMPARE((Watch{ Watch::ViewType::INT_HEX, 0, 1}.asString(memory)), "7f");
-        QCOMPARE((Watch{ Watch::ViewType::INT_HEX, 1, 1}.asString(memory)), "80");
-        QCOMPARE((Watch{ Watch::ViewType::INT_HEX, 2, 1}.asString(memory)), "81");
-    }
-
     void testUInt8AsString() {
         std::unordered_map<std::uint16_t, std::vector<std::uint8_t>> memory = { {0, { 0x7f, 0x80, 0x81 } } };
         QCOMPARE((Watch{ Watch::ViewType::UINT, 0, 1}.asString(memory)), "127");

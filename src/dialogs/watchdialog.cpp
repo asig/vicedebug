@@ -83,17 +83,16 @@ void WatchDialog::setupUI() {
     connect(length_, &QLineEdit::textChanged, this, &WatchDialog::onLengthChanged);
 
     viewtype_ = new QComboBox();
-    viewtype_->insertItem(0, "int8", QVariant( { QVariant(Watch::ViewType::INT), QVariant(1) } ));
-    viewtype_->insertItem(1, "int8 (hex)", QVariant( { QVariant(Watch::ViewType::INT_HEX), QVariant(1) } ));
-    viewtype_->insertItem(2, "uint8", QVariant( { QVariant(Watch::ViewType::UINT), QVariant(1) } ));
-    viewtype_->insertItem(3, "uint8 (hex)", QVariant( { QVariant(Watch::ViewType::UINT_HEX), QVariant(1) } ));
-    viewtype_->insertItem(4, "int16", QVariant( { QVariant(Watch::ViewType::INT), QVariant(2) } ));
-    viewtype_->insertItem(5, "int16 (hex)", QVariant( { QVariant(Watch::ViewType::INT_HEX), QVariant(2) } ));
-    viewtype_->insertItem(6, "uint16", QVariant( { QVariant(Watch::ViewType::UINT), QVariant(2) } ));
-    viewtype_->insertItem(7, "uint16 (hex)", QVariant( { QVariant(Watch::ViewType::UINT_HEX), QVariant(2) } ));
-    viewtype_->insertItem(8, "float", QVariant( { QVariant(Watch::ViewType::FLOAT), QVariant(0) } ));
-    viewtype_->insertItem(9, "string", QVariant( { QVariant(Watch::ViewType::CHARS), QVariant(0) } ));
-    viewtype_->insertItem(10, "bytes", QVariant( { QVariant(Watch::ViewType::BYTES), QVariant(0) } ));
+    int idx = 0;
+    viewtype_->insertItem(idx++, "int8", QVariant( { QVariant(Watch::ViewType::INT), QVariant(1) } ));
+    viewtype_->insertItem(idx++, "uint8", QVariant( { QVariant(Watch::ViewType::UINT), QVariant(1) } ));
+    viewtype_->insertItem(idx++, "uint8 (hex)", QVariant( { QVariant(Watch::ViewType::UINT_HEX), QVariant(1) } ));
+    viewtype_->insertItem(idx++, "int16", QVariant( { QVariant(Watch::ViewType::INT), QVariant(2) } ));
+    viewtype_->insertItem(idx++, "uint16", QVariant( { QVariant(Watch::ViewType::UINT), QVariant(2) } ));
+    viewtype_->insertItem(idx++, "uint16 (hex)", QVariant( { QVariant(Watch::ViewType::UINT_HEX), QVariant(2) } ));
+    viewtype_->insertItem(idx++, "float", QVariant( { QVariant(Watch::ViewType::FLOAT), QVariant(0) } ));
+    viewtype_->insertItem(idx++, "string", QVariant( { QVariant(Watch::ViewType::CHARS), QVariant(0) } ));
+    viewtype_->insertItem(idx++, "bytes", QVariant( { QVariant(Watch::ViewType::BYTES), QVariant(0) } ));
 
     connect(viewtype_, &QComboBox::currentIndexChanged, this, &WatchDialog::onViewtypeChanged);
 

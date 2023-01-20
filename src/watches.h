@@ -30,7 +30,6 @@ struct Watch {
     enum ViewType {
         INT,
         UINT,
-        INT_HEX,
         UINT_HEX,
         FLOAT,
         BYTES,
