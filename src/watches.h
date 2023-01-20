@@ -37,6 +37,7 @@ struct Watch {
     };
 
     ViewType viewType;
+    std::uint16_t bankId;
     std::uint16_t addrStart;
     std::uint16_t len;
 

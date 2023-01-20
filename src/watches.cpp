@@ -103,7 +103,7 @@ QString cbmDoubleToString(double d) {
 }
 
 QString Watch::asString(const std::unordered_map<std::uint16_t, std::vector<std::uint8_t>>& memory) const {
-    const std::vector<std::uint8_t>& mem = memory.at(0); // TODO use banks!
+    const std::vector<std::uint8_t>& mem = memory.at(bankId);
     switch(viewType) {
     case INT:
         return QString::asprintf("%d", readInt(mem, addrStart, len));

@@ -58,6 +58,7 @@ private:
 
     Watches watches_;
     std::unordered_map<std::uint16_t, std::vector<std::uint8_t>> memory_;
+    Banks banks_;
 
     QTreeWidget* tree_;
     QToolButton* addBtn_;

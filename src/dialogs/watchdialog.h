@@ -23,6 +23,7 @@
 #include <QLineEdit>
 #include <QComboBox>
 
+#include "machinestate.h"
 #include "watches.h"
 
 namespace vicedebug {
@@ -32,8 +33,8 @@ class WatchDialog : public QDialog
     Q_OBJECT
 
 public:
-    explicit WatchDialog(QWidget* parent);
-    explicit WatchDialog(QWidget* parent, Watch watch);
+    explicit WatchDialog(Banks banks, QWidget* parent);
+    explicit WatchDialog(Banks banks, Watch watch, QWidget* parent);
 
     Watch watch();
 
@@ -50,10 +51,13 @@ private:
 
     QLineEdit* addrStart_;
     QLineEdit* length_;
+    QComboBox* bank_;
     QComboBox* viewtype_;
 
     QPushButton* okBtn_;
     QPushButton* cancelBtn_;
+
+    Banks banks_;
 
     Watch watch_;
 };

@@ -21,14 +21,14 @@
 - [X] Enable/Disable breakpoints
 
 ## Watches Widget
-- [ ] Add
-- [ ] Remove
+- [X] Add
+- [X] Remove
 - [ ] Edit
 - [X] Different view types (int, uint, hex, text)
-- [ ] Remove "int hex" variants (they are the same as uint hex)
-- [ ] Support banks
-      - [ ] in Watches Dialog
-      - [ ] in Watches
+- [X] Remove "int hex" variants (they are the same as uint hex)
+- [X] Support banks
+      - [X] in Watches Dialog
+      - [X] in Watches
 
 ## Registers Widget
 - [X] Add register modification

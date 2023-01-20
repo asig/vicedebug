@@ -28,7 +28,7 @@ namespace vicedebug {
 
 struct Bank {
     std::uint16_t id;
-    std::string name;
+    std::string name;       
 };
 
 typedef std::vector<Bank> Banks;

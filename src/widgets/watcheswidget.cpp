@@ -35,7 +35,7 @@ WatchesWidget::WatchesWidget(Controller* controller, QWidget* parent) :
 
     tree_ = new QTreeWidget();
     tree_->setColumnCount(3);
-    tree_->setHeaderLabels({ "Address","Type", "Value"} );
+    tree_->setHeaderLabels({ "Bank", "Address","Type", "Value"} );
     tree_->setSelectionBehavior(QAbstractItemView::SelectRows);
     connect(tree_, &QTreeWidget::itemSelectionChanged, this, &WatchesWidget::onTreeItemSelectionChanged);
     connect(tree_, &QTreeWidget::doubleClicked, this, &WatchesWidget::onTreeItemDoubleClicked);
@@ -84,7 +84,6 @@ void WatchesWidget::clearTree() {
 
 QString viewTypeAsStr(const Watch& w) {
     switch(w.viewType) {
-    case Watch::ViewType::INT_HEX:
     case Watch::ViewType::INT:
         switch(w.len) {
         case 1: return "int8";
@@ -109,11 +108,21 @@ QString viewTypeAsStr(const Watch& w) {
 }
 
 void WatchesWidget::appendWatchToTree(const Watch& w) {
+    Bank bank;
+    for (auto b : banks_) {
+        if (b.id == w.bankId) {
+            bank = b;
+            break;
+        }
+    }
     QTreeWidgetItem* item = new QTreeWidgetItem();
-    item->setText(0, QString::asprintf("%04x", w.addrStart));
-    item->setText(1, viewTypeAsStr(w));
-    item->setText(2, w.asString(memory_)); // FIXME use
-    item->setFont(2, Fonts::c64());
+    item->setText(0, bank.name.c_str());
+    item->setText(1, QString::asprintf("%04x", w.addrStart));
+    item->setText(2, viewTypeAsStr(w));
+    item->setText(3, w.asString(memory_));
+    if (w.viewType == Watch::ViewType::CHARS) {
+        item->setFont(3, Fonts::c64());
+    }
     tree_->insertTopLevelItem(tree_->topLevelItemCount(), item);
 }
 
@@ -127,13 +136,14 @@ void WatchesWidget::updateTree() {
     for (int i = 0; i < watches_.size(); i++) {
         const Watch& w = watches_[i];
         QTreeWidgetItem* item = tree_->topLevelItem(i);
-        item->setText(2, w.asString(memory_));
+        item->setText(3, w.asString(memory_));
     }
 }
 
 void WatchesWidget::onConnected(const MachineState& machineState, const Banks& banks, const Breakpoints& breakpoints) {
     enableControls(true);
     memory_ = machineState.memory;
+    banks_ = banks;
     fillTree();
 }
 
@@ -170,7 +180,7 @@ void WatchesWidget::onTreeItemDoubleClicked() {
 }
 
 void WatchesWidget::onAddClicked() {
-    WatchDialog dlg(this);
+    WatchDialog dlg(banks_, this);
     int res = dlg.exec();
     if (res == QDialog::DialogCode::Accepted) {
         Watch w = dlg.watch();

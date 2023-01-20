@@ -29,12 +29,14 @@
 
 namespace vicedebug {
 
-WatchDialog::WatchDialog(QWidget* parent) : QDialog(parent) {
+WatchDialog::WatchDialog(Banks banks, QWidget* parent)
+    : banks_(banks), QDialog(parent) {
     setupUI();
     setWindowTitle("Add watch...");
 }
 
-WatchDialog::WatchDialog(QWidget* parent, Watch watch) : QDialog(parent) {
+WatchDialog::WatchDialog(Banks banks, Watch watch, QWidget* parent)
+    : banks_(banks), QDialog(parent) {
     setupUI();
 
     addrStart_->setText(QString::asprintf("%04X", watch.addrStart));
@@ -60,6 +62,13 @@ WatchDialog::WatchDialog(QWidget* parent, Watch watch) : QDialog(parent) {
     }
     viewtype_->setCurrentIndex(i);
 
+    for (i = 0; i < bank_->count(); i++) {
+        if (bank_->itemData(i).toUInt() == watch.bankId) {
+            bank_->setCurrentIndex(i);
+            break;
+        }
+    }
+
     setWindowTitle("Edit watch...");
 }
 
@@ -83,20 +92,26 @@ void WatchDialog::setupUI() {
     connect(length_, &QLineEdit::textChanged, this, &WatchDialog::onLengthChanged);
 
     viewtype_ = new QComboBox();
-    int idx = 0;
-    viewtype_->insertItem(idx++, "int8", QVariant( { QVariant(Watch::ViewType::INT), QVariant(1) } ));
-    viewtype_->insertItem(idx++, "uint8", QVariant( { QVariant(Watch::ViewType::UINT), QVariant(1) } ));
-    viewtype_->insertItem(idx++, "uint8 (hex)", QVariant( { QVariant(Watch::ViewType::UINT_HEX), QVariant(1) } ));
-    viewtype_->insertItem(idx++, "int16", QVariant( { QVariant(Watch::ViewType::INT), QVariant(2) } ));
-    viewtype_->insertItem(idx++, "uint16", QVariant( { QVariant(Watch::ViewType::UINT), QVariant(2) } ));
-    viewtype_->insertItem(idx++, "uint16 (hex)", QVariant( { QVariant(Watch::ViewType::UINT_HEX), QVariant(2) } ));
-    viewtype_->insertItem(idx++, "float", QVariant( { QVariant(Watch::ViewType::FLOAT), QVariant(0) } ));
-    viewtype_->insertItem(idx++, "string", QVariant( { QVariant(Watch::ViewType::CHARS), QVariant(0) } ));
-    viewtype_->insertItem(idx++, "bytes", QVariant( { QVariant(Watch::ViewType::BYTES), QVariant(0) } ));
+    viewtype_->addItem("int8", QVariant( { QVariant(Watch::ViewType::INT), QVariant(1) } ));
+    viewtype_->addItem("uint8", QVariant( { QVariant(Watch::ViewType::UINT), QVariant(1) } ));
+    viewtype_->addItem("uint8 (hex)", QVariant( { QVariant(Watch::ViewType::UINT_HEX), QVariant(1) } ));
+    viewtype_->addItem("int16", QVariant( { QVariant(Watch::ViewType::INT), QVariant(2) } ));
+    viewtype_->addItem("uint16", QVariant( { QVariant(Watch::ViewType::UINT), QVariant(2) } ));
+    viewtype_->addItem("uint16 (hex)", QVariant( { QVariant(Watch::ViewType::UINT_HEX), QVariant(2) } ));
+    viewtype_->addItem("float", QVariant( { QVariant(Watch::ViewType::FLOAT), QVariant(0) } ));
+    viewtype_->addItem("string", QVariant( { QVariant(Watch::ViewType::CHARS), QVariant(0) } ));
+    viewtype_->addItem("bytes", QVariant( { QVariant(Watch::ViewType::BYTES), QVariant(0) } ));
+    connect(viewtype_, &QComboBox::currentIndexChanged, this, &WatchDialog::onViewtypeChanged);
 
+    bank_ = new QComboBox();
+    for (Bank b : banks_) {
+        bank_->addItem(b.name.c_str(), QVariant(b.id));
+    }
     connect(viewtype_, &QComboBox::currentIndexChanged, this, &WatchDialog::onViewtypeChanged);
 
     QHBoxLayout* elements = new QHBoxLayout();
+    elements->addWidget(new QLabel("Bank:"));
+    elements->addWidget(bank_);
     elements->addWidget(new QLabel("Address:"));
     elements->addWidget(addrStart_);
     elements->addWidget(new QLabel("Type:"));
@@ -202,6 +217,7 @@ void WatchDialog::fillWatch() {
     watch_.addrStart = parseInt(addrStart_->text(), 16, ok);
     QList<QVariant> attrs = viewtype_->currentData().toList();
     watch_.viewType = (Watch::ViewType)attrs.at(0).toInt();
+    watch_.bankId = bank_->currentData().toUInt();
     watch_.len = attrs.at(1).toInt();
     if (watch_.viewType == Watch::ViewType::BYTES || watch_.viewType == Watch::ViewType::CHARS) {
         watch_.len = parseInt(length_->text(), 10, ok);
