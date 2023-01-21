@@ -66,7 +66,6 @@ private:
     void fillTree(const Breakpoints& breakpoints);
 
     Breakpoints breakpoints_;
-    std::unordered_map<QTreeWidgetItem*, int> bpNumberForIndex_;
     Controller* controller_;
 
     QTreeWidget* tree_;
