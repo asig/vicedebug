@@ -33,7 +33,7 @@ BreakpointDialog::BreakpointDialog(QWidget* parent) : QDialog(parent) {
     setWindowTitle("Add breakpoint...");
 }
 
-BreakpointDialog::BreakpointDialog(QWidget* parent, Breakpoint breakpoint) : QDialog(parent) {
+BreakpointDialog::BreakpointDialog(Breakpoint breakpoint, QWidget* parent) : QDialog(parent) {
     setupUI();
     addrStart_->setText(QString::asprintf("%04X", breakpoint.addrStart));
     addrEnd_->setText(breakpoint.addrEnd == breakpoint.addrStart ? "" : QString::asprintf("%04X", breakpoint.addrEnd));

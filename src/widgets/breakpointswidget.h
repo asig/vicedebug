@@ -54,16 +54,18 @@ public slots:
 private slots:
     void onTreeItemSelectionChanged();
     void onTreeItemChanged(QTreeWidgetItem* item, int column);
+    void onTreeItemDoubleClicked(QTreeWidgetItem* item, int column);
     void onAddClicked();
     void onRemoveClicked();
 
 private:
-    void addItem(Breakpoint bp);
+    void addItem(int bpIdx);
 
     void enableControls(bool enable);
     void clearTree();
     void fillTree(const Breakpoints& breakpoints);
 
+    Breakpoints breakpoints_;
     std::unordered_map<QTreeWidgetItem*, int> bpNumberForIndex_;
     Controller* controller_;
 

@@ -37,7 +37,7 @@ public:
     void disconnect();
     void continueExecution();
 
-    void createBreakpoint(std::uint8_t op, std::uint16_t start, std::uint16_t end);
+    void createBreakpoint(std::uint8_t op, std::uint16_t start, std::uint16_t end, bool enabled);
     void deleteBreakpoint(std::uint32_t breakpointNumber);
     void enableBreakpoint(std::uint32_t breakpointNumber, bool enabled);
 

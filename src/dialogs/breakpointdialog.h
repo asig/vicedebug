@@ -33,7 +33,7 @@ class BreakpointDialog : public QDialog
 
 public:
     explicit BreakpointDialog(QWidget* parent);
-    explicit BreakpointDialog(QWidget* parent, Breakpoint bp);
+    explicit BreakpointDialog(Breakpoint bp, QWidget* parent);
 
     Breakpoint breakpoint();
 

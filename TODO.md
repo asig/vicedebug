@@ -19,6 +19,9 @@
 - [X] Add breakpoint
 - [X] Remove breakpoint
 - [X] Enable/Disable breakpoints
+- [ ] Context menu
+      - [ ] modify
+      - [ ] delete
 
 ## Watches Widget
 - [X] Add
@@ -29,6 +32,9 @@
 - [X] Support banks
       - [X] in Watches Dialog
       - [X] in Watches
+- [ ] Context menu
+      - [ ] modify
+      - [ ] delete
 
 ## Registers Widget
 - [X] Add register modification
@@ -41,6 +47,7 @@
 - [ ] add sprite viewer (all sprites, currently active sprites)
 - [ ] Font viewer (currently installed font)
 - [ ] Screen viewer (currently active screen)
+- [ ] Support Z80 for Commodore 128
 
 ## Make it look good
 ### Windows

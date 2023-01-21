@@ -131,8 +131,8 @@ void Controller::disconnect() {
     emit disconnected();
 }
 
-void Controller::createBreakpoint(std::uint8_t op, std::uint16_t start, std::uint16_t end) {
-    auto checkpointSetFuture = viceClient_->checkpointSet(start, end, true, true, op, false, MAIN_MEMORY);
+void Controller::createBreakpoint(std::uint8_t op, std::uint16_t start, std::uint16_t end, bool enabled) {
+    auto checkpointSetFuture = viceClient_->checkpointSet(start, end, true, enabled, op, false, MAIN_MEMORY);
     checkpointSetFuture.waitForFinished();
     auto checkpointSetResponse = checkpointSetFuture.result();
 

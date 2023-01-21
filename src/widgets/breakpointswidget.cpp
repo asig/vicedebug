@@ -42,6 +42,7 @@ BreakpointsWidget::BreakpointsWidget(Controller* controller, QWidget* parent) :
     tree_->setSelectionBehavior(QAbstractItemView::SelectRows);
     connect(tree_, &QTreeWidget::itemSelectionChanged, this, &BreakpointsWidget::onTreeItemSelectionChanged);
     connect(tree_, &QTreeWidget::itemChanged, this, &BreakpointsWidget::onTreeItemChanged);
+    connect(tree_, &QTreeWidget::itemDoubleClicked, this, &BreakpointsWidget::onTreeItemDoubleClicked);
 
     addBtn_ = new QToolButton();
     addBtn_->setIcon(QIcon(":/images/codicons/add.svg"));
@@ -74,7 +75,8 @@ BreakpointsWidget::BreakpointsWidget(Controller* controller, QWidget* parent) :
 BreakpointsWidget::~BreakpointsWidget() {
 }
 
-void BreakpointsWidget::addItem(Breakpoint bp) {
+void BreakpointsWidget::addItem(int bpIdx) {
+    Breakpoint bp = breakpoints_[bpIdx];
 
     QString rangeStr = QString::asprintf("%04x", bp.addrStart);
     if (bp.addrEnd != bp.addrStart) {
@@ -96,7 +98,7 @@ void BreakpointsWidget::addItem(Breakpoint bp) {
     item->setCheckState(0, bp.enabled ? Qt::Checked : Qt::Unchecked);
     item->setText(1, rangeStr);
     item->setText(2, typeStr);
-    item->setData(0, Qt::UserRole, QVariant(bp.number));
+    item->setData(0, Qt::UserRole, QVariant(bpIdx));
 
     tree_->insertTopLevelItem(tree_->topLevelItemCount(), item);
 }
@@ -112,15 +114,15 @@ void BreakpointsWidget::clearTree() {
 }
 
 void BreakpointsWidget::fillTree(const Breakpoints& breakpoints) {
-    Breakpoints copy = breakpoints;
-    std::sort(copy.begin(), copy.end(), [](const Breakpoint& b1, const Breakpoint& b2) {
+    breakpoints_ = breakpoints;
+    std::sort(breakpoints_.begin(), breakpoints_.end(), [](const Breakpoint& b1, const Breakpoint& b2) {
                                                    if (b1.addrStart == b2.addrStart) {
                                                        return b1.addrEnd < b2.addrEnd;
                                                    }
                                                    return b1.addrStart < b2.addrStart;
                                                });
-    for (const Breakpoint& bp : copy) {
-        addItem(bp);
+    for (int i = 0; i < breakpoints_.size(); i++) {
+        addItem(i);
     }
 }
 
@@ -162,7 +164,8 @@ void BreakpointsWidget::onTreeItemChanged(QTreeWidgetItem* item, int column) {
         return;
     }
 
-    std::uint32_t bpNumber = item->data(0, Qt::UserRole).toUInt();
+    int bpIdx = item->data(0, Qt::UserRole).toInt();
+    std::uint32_t bpNumber = breakpoints_[bpIdx].number;
     bool checked = item->checkState(0);
     // Ensure that the breakpoints are only updated after the tree's itemChanged signal is fully handled.
     QTimer::singleShot(0, [this, bpNumber, checked] {
@@ -171,12 +174,26 @@ void BreakpointsWidget::onTreeItemChanged(QTreeWidgetItem* item, int column) {
     qDebug() << "Leaving onTreeItemChanged()";
 }
 
+void BreakpointsWidget::onTreeItemDoubleClicked(QTreeWidgetItem* item, int column) {
+    qDebug() << "Entering onTreeItemDoubleClicked()";
+    Breakpoint bp = breakpoints_[item->data(0, Qt::UserRole).toInt()];
+    BreakpointDialog dlg(bp, this);
+    int res = dlg.exec();
+    if (res == QDialog::DialogCode::Accepted) {
+        Breakpoint modifiedBp = dlg.breakpoint();
+        bool wasEnabled = bp.enabled;
+        controller_->deleteBreakpoint(bp.number);
+        controller_->createBreakpoint(modifiedBp.op, modifiedBp.addrStart, modifiedBp.addrEnd, wasEnabled);
+    }
+    qDebug() << "Leaving onTreeItemDoubleClicked()";
+}
+
 void BreakpointsWidget::onAddClicked() {
     BreakpointDialog dlg(this);
     int res = dlg.exec();
     if (res == QDialog::DialogCode::Accepted) {
         Breakpoint bp = dlg.breakpoint();
-        controller_->createBreakpoint(bp.op, bp.addrStart,bp.addrEnd);
+        controller_->createBreakpoint(bp.op, bp.addrStart,bp.addrEnd, true);
     }
 }
 
@@ -187,8 +204,8 @@ void BreakpointsWidget::onRemoveClicked() {
         return;
     }
 
-    std::uint32_t bpNumber = selected[0]->data(0, Qt::UserRole).toUInt();
-    controller_->deleteBreakpoint(bpNumber);
+    Breakpoint bp = breakpoints_[selected[0]->data(0, Qt::UserRole).toInt()];
+    controller_->deleteBreakpoint(bp.number);
 }
 
 }

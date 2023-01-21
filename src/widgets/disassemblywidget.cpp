@@ -155,11 +155,10 @@ void DisassemblyContent::mouseReleaseEvent(QMouseEvent* event) {
     if (it != addressToBreakpoint_.end()) {
         // We *do* have a breakpoint here! Remove it.
         auto bp = it->second;
-        bp.enabled = !bp.enabled;
-        controller_->enableBreakpoint(bp.number, bp.enabled);
+        controller_->deleteBreakpoint(bp.number);
     } else {
         // No breakpoint, create one
-        controller_->createBreakpoint(Breakpoint::EXEC, addr, addr);
+        controller_->createBreakpoint(Breakpoint::EXEC, addr, addr, true);
     }
 
     mouseDown_ = false;
