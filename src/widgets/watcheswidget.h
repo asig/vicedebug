@@ -38,7 +38,7 @@ public:
 
 private slots:
     void onTreeItemSelectionChanged();
-    void onTreeItemDoubleClicked();
+    void onTreeItemDoubleClicked(QTreeWidgetItem* item, int column);
     void onAddClicked();
     void onRemoveClicked();
     void onConnected(const MachineState& machineState, const Banks& banks, const Breakpoints& breakpoints);
@@ -53,6 +53,9 @@ private:
     void fillTree();
     void appendWatchToTree(const Watch& w);
     void updateTree();
+    void fillTreeItem(QTreeWidgetItem* item, const Watch& w);
+
+    Bank bankById(std::uint32_t id);
 
     Controller* controller_;
 
