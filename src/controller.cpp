@@ -105,6 +105,9 @@ void Controller::connectToVice(QString host, int port) {
     qDebug() << "Got checkpoints";
 
     breakpoints_.clear();
+    // It looks like as of 2023-01-24, VICE head is returning breakpoints multiple time,
+    // so we need to filter them.
+    // TODO(asigner): Look into VICE to verify this.
     Breakpoints breakpoints;
     for (auto cp : checkpointListResponse.checkpoints) {
         Breakpoint bp;
@@ -113,8 +116,11 @@ void Controller::connectToVice(QString host, int port) {
         bp.enabled = cp.enabled;
         bp.number = cp.number;
         bp.op = cp.op;
-        breakpoints.push_back(bp);
-        breakpoints_[bp.number] = bp;
+        if (breakpoints_.find(bp.number) == breakpoints_.end()) {
+            // Not seen yet, add it.
+            breakpoints.push_back(bp);
+            breakpoints_[bp.number] = bp;
+        }
     }
 
     MachineState machineState = getMachineState();
