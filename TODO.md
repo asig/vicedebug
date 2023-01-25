@@ -12,7 +12,8 @@
       - [ ] switch between uc/graphics and lc/uc fonts (U+EExx vs U+EFxx)
       - [X] allow to select bank
 - [X] Support different banks
-- [ ] Highlight read/write breakpoints
+- [X] Highlight read/write breakpoints
+- [ ] Mouse-over addresses with breakpoints shows breakpoint info
 - [ ] Context-Menu that allows:
       - [ ] add a watch
       - [ ] add a breakpoint

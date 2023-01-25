@@ -79,7 +79,7 @@ MemoryWidget::MemoryWidget(Controller* controller, QWidget* parent) :
     connect(bankCombo_, &QComboBox::currentIndexChanged, [this](int index) {
         selectedBank_ = index;
         if (selectedBank_ < memory_.size()) {
-            content_->setMemory(memory_.at(selectedBank_));
+            content_->setMemory(memory_.at(selectedBank_), selectedBank_ == 0 ? breakpoints_ : Breakpoints()); // So far, breakpoints are only supported for default bank...
         }
     });
     QHBoxLayout* toolbar = new QHBoxLayout();
@@ -99,6 +99,7 @@ MemoryWidget::MemoryWidget(Controller* controller, QWidget* parent) :
     connect(controller, &Controller::executionPaused, this, &MemoryWidget::onExecutionPaused);
     connect(controller, &Controller::executionResumed, this, &MemoryWidget::onExecutionResumed);
     connect(controller, &Controller::memoryChanged, this, &MemoryWidget::onMemoryChanged);
+    connect(controller, &Controller::breakpointsChanged, this, &MemoryWidget::onBreakpointsChanged);
 
     setEnabled(false);
 }
@@ -113,16 +114,15 @@ void MemoryWidget::onConnected(const MachineState& machineState, const Banks& ba
     }
     selectedBank_ = 0;
     bankCombo_->setCurrentIndex(0);
-
     memory_ = machineState.memory;
-    content_->setMemory(memory_.at(selectedBank_));
-//    content_->setEnabled(true);
+    breakpoints_ = breakpoints;
+    content_->setMemory(memory_.at(selectedBank_), selectedBank_ == 0 ? breakpoints_ : Breakpoints()); // So far, breakpoints are only supported for default bank...
     setEnabled(true);
 }
 
 void MemoryWidget::onDisconnected() {
     memory_.clear();
-    content_->setMemory({});
+    content_->setMemory({}, {});
     setEnabled(false);
 }
 
@@ -140,7 +140,7 @@ void MemoryWidget::onExecutionResumed() {
 
 void MemoryWidget::onExecutionPaused(const MachineState& machineState) {
     memory_ = machineState.memory;
-    content_->setMemory(memory_.at(selectedBank_));
+    content_->setMemory(memory_.at(selectedBank_), selectedBank_ == 0 ? breakpoints_ : Breakpoints()); // So far, breakpoints are only supported for default bank...
     setEnabled(true);
     update();
 }
@@ -150,9 +150,14 @@ void MemoryWidget::onMemoryChanged(std::uint16_t bankId, std::uint16_t addr, std
     for (auto b : data) {
         mem[addr++] = b;
     }
-    content_->setMemory(memory_.at(selectedBank_));
+    content_->setMemory(memory_.at(selectedBank_), selectedBank_ == 0 ? breakpoints_ : Breakpoints()); // So far, breakpoints are only supported for default bank...
 }
 
+
+void MemoryWidget::onBreakpointsChanged(const Breakpoints& breakpoints) {
+    breakpoints_ = breakpoints;
+    content_->setMemory(memory_.at(selectedBank_), selectedBank_ == 0 ? breakpoints_ : Breakpoints()); // So far, breakpoints are only supported for default bank...
+}
 
 MemoryContent::MemoryContent(QScrollArea* parent) :
     QWidget(parent), scrollArea_(parent)
@@ -184,8 +189,21 @@ MemoryContent::MemoryContent(QScrollArea* parent) :
 MemoryContent::~MemoryContent() {
 }
 
-void MemoryContent::setMemory(const std::vector<std::uint8_t>& memory) {
+void MemoryContent::setMemory(const std::vector<std::uint8_t>& memory, const Breakpoints& breakpoints) {
     memory_ = memory;
+    breakpointTypes_.resize(memory.size());
+    for (int i = 0; i < memory.size(); i++) {
+        breakpointTypes_[i] = 0;
+    }
+    for (auto bp : breakpoints) {
+        std::uint8_t op = bp.op & (Breakpoint::Type::READ | Breakpoint::Type::WRITE);
+        if (op == 0) {
+            continue;
+        }
+        for (int addr = bp.addrStart; addr <= bp.addrEnd; addr++) {
+            breakpointTypes_[addr] = op;
+        }
+    }
     updateSize(memory_.size() / kBytesPerLine);
     update();
 }
@@ -204,6 +222,8 @@ void MemoryContent::paintEvent(QPaintEvent* event) {
     auto bg = isEnabled() ? kBg : kBgDisabled;
     auto fgSelected = isEnabled() ? kFgSelected : kFgDisabled;
     auto bgSelected = isEnabled() ? kBgSelected : kBgDisabled;
+
+    QBrush bpBg = QBrush(QColor(255,0,0,50));
 
     painter.setPen(fg);
     painter.setBackgroundMode(Qt::OpaqueMode);
@@ -224,6 +244,7 @@ void MemoryContent::paintEvent(QPaintEvent* event) {
         for (int i = 0; i < kBytesPerLine; i++) {
             QString hex;
             QString text;
+            bool isBreakpoint = breakpointTypes_[pos + i] != 0;
             if (pos + i < memSize) {
                 std::uint8_t c = memory_[pos+i];
                 hex = QString::asprintf("%02X ", c);
@@ -232,10 +253,16 @@ void MemoryContent::paintEvent(QPaintEvent* event) {
                 hex = "   ";
                 text = " ";
             }
+            if (isBreakpoint) {
+                painter.setBackground(QBrush(bpBg));
+            }
             painter.setFont(Resources::robotoMonoFont());
             painter.drawText(borderW_ + addressW_ + separatorW_ + i*hexSpaceW_, y, hex);
             painter.setFont(Resources::c64Font());
             painter.drawText(borderW_ + addressW_ + separatorW_ + kBytesPerLine*hexSpaceW_ - hexCharW_ + separatorW_ + i * charW_ , y, text);
+            if (isBreakpoint) {
+                painter.setBackground(QBrush(bg));
+            }
         }
 
         if (editActive_) {

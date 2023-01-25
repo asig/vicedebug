@@ -48,6 +48,7 @@ private slots:
     void onExecutionResumed();
     void onExecutionPaused(const MachineState& machineState);
     void onMemoryChanged(std::uint16_t bankId, std::uint16_t addr, std::vector<std::uint8_t> data);
+    void onBreakpointsChanged(const Breakpoints& breakpoints);
 
 private:
     Controller* controller_;
@@ -58,6 +59,7 @@ private:
 
     int selectedBank_;
     std::unordered_map<std::uint16_t, std::vector<std::uint8_t>> memory_;
+    Breakpoints breakpoints_;
 };
 
 class MemoryContent : public QWidget {
@@ -68,7 +70,7 @@ public:
     virtual ~MemoryContent();
 
 public:
-    void setMemory(const std::vector<std::uint8_t>& memory);
+    void setMemory(const std::vector<std::uint8_t>& memory, const Breakpoints& breakpoints);
 
 signals:
     void memoryChanged(std::uint16_t addr, std::uint8_t newVal);
@@ -93,6 +95,7 @@ private:
     QScrollArea* scrollArea_;
 
     std::vector<std::uint8_t> memory_;
+    std::vector<std::uint8_t> breakpointTypes_;
     std::uint16_t selectedBankId_;
 
     std::uint32_t petsciiBase_; // 0xee00 for uc/graphics, and 0xef00 for lc/uc
