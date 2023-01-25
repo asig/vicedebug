@@ -24,7 +24,7 @@
 #include <QLabel>
 #include <QSpacerItem>
 
-#include "fonts.h"
+#include "resources.h"
 
 namespace vicedebug {
 
@@ -32,7 +32,7 @@ namespace {
 
 QLineEdit* createLineEdit(int len) {
     QLineEdit* e= new QLineEdit();
-    e->setFont(Fonts::robotoMono());
+    e->setFont(Resources::robotoMonoFont());
     e->setMaxLength(len);
     e->setAlignment(Qt::AlignHCenter);
     e->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);

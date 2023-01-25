@@ -19,7 +19,7 @@
 
 #include "widgets/memorywidget.h"
 
-#include "fonts.h"
+#include "resources.h"
 #include "petscii.h"
 
 #include <QEvent>
@@ -160,7 +160,7 @@ MemoryContent::MemoryContent(QScrollArea* parent) :
     setFocusPolicy(Qt::StrongFocus);
 
     // Compute the size of the widget:
-    QFontMetrics robotofm(Fonts::robotoMono());
+    QFontMetrics robotofm(Resources::robotoMonoFont());
     ascent_ = robotofm.ascent();
     borderW_ = robotofm.horizontalAdvance(" ");
     addressW_ = robotofm.horizontalAdvance("00000");
@@ -168,7 +168,7 @@ MemoryContent::MemoryContent(QScrollArea* parent) :
     hexSpaceW_ = robotofm.horizontalAdvance("00 ");
     hexCharW_ = robotofm.horizontalAdvance("0");
 
-    QFontMetrics c64fm(Fonts::c64());
+    QFontMetrics c64fm(Resources::c64Font());
     charW_ = c64fm.horizontalAdvance("0");
 
     lineH_ = c64fm.height() > robotofm.height() ? c64fm.height() : robotofm.height();
@@ -219,7 +219,7 @@ void MemoryContent::paintEvent(QPaintEvent* event) {
         }
 
         QString addr = QString::asprintf(addrFormatString, pos);
-        painter.setFont(Fonts::robotoMono());
+        painter.setFont(Resources::robotoMonoFont());
         painter.drawText(borderW_, y, addr);
         for (int i = 0; i < kBytesPerLine; i++) {
             QString hex;
@@ -232,9 +232,9 @@ void MemoryContent::paintEvent(QPaintEvent* event) {
                 hex = "   ";
                 text = " ";
             }
-            painter.setFont(Fonts::robotoMono());
+            painter.setFont(Resources::robotoMonoFont());
             painter.drawText(borderW_ + addressW_ + separatorW_ + i*hexSpaceW_, y, hex);
-            painter.setFont(Fonts::c64());
+            painter.setFont(Resources::c64Font());
             painter.drawText(borderW_ + addressW_ + separatorW_ + kBytesPerLine*hexSpaceW_ - hexCharW_ + separatorW_ + i * charW_ , y, text);
         }
 
@@ -246,14 +246,14 @@ void MemoryContent::paintEvent(QPaintEvent* event) {
                 if (pos <= cursorPos_/2 && cursorPos_/2 < pos+kBytesPerLine) {
                     int x = borderW_ + addressW_ + separatorW_ + ((cursorPos_/2) % kBytesPerLine) * hexSpaceW_ + (cursorPos_ % 2) * hexCharW_;
                     text = QString::asprintf("%02X",memory_[cursorPos_/2]).mid((cursorPos_ % 2),1);
-                    painter.setFont(Fonts::robotoMono());
+                    painter.setFont(Resources::robotoMonoFont());
                     painter.drawText(x, y, text);
                 }
             } else {
                 if (pos <= cursorPos_ && cursorPos_ < pos+kBytesPerLine) {
                     char c = (char)memory_[cursorPos_];
                     text = PETSCII::isPrintable(c) ? QString(QChar(petsciiBase_ + PETSCII::toScreenCode(c))) : ".";
-                    painter.setFont(Fonts::c64());
+                    painter.setFont(Resources::c64Font());
                     painter.drawText(borderW_ + addressW_ + separatorW_ + kBytesPerLine*hexSpaceW_ - hexCharW_ + separatorW_ + (cursorPos_ % kBytesPerLine) * charW_ , y, text);
                 }
             }

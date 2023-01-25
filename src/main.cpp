@@ -18,7 +18,7 @@
  */
 
 #include "mainwindow.h"
-#include "fonts.h"
+#include "resources.h"
 #include "controller.h"
 
 #include <QApplication>
@@ -26,7 +26,7 @@
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
-    vicedebug::Fonts::init();
+    vicedebug::Resources::init();
 
     vicedebug::ViceClient viceClient(nullptr);
     vicedebug::Controller controller(&viceClient);

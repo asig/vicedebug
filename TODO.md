@@ -7,13 +7,15 @@
 
 ## Memory Widget
 - [X] Allow modifying memory
-- [ ] Toolbar
+- [X] Toolbar
       - [ ] "Jump to address" box
       - [ ] switch between uc/graphics and lc/uc fonts (U+EExx vs U+EFxx)
       - [X] allow to select bank
-- [ ] "Jump to address" box
-- [ ] switch between uc/graphics and lc/uc fonts (U+EExx vs U+EFxx)
 - [X] Support different banks
+- [ ] Highlight read/write breakpoints
+- [ ] Context-Menu that allows:
+      - [ ] add a watch
+      - [ ] add a breakpoint
 
 ## Breakpoints Widget
 - [X] Add breakpoint
@@ -26,7 +28,7 @@
 ## Watches Widget
 - [X] Add
 - [X] Remove
-- [ ] Edit
+- [X] Edit
 - [X] Different view types (int, uint, hex, text)
 - [X] Remove "int hex" variants (they are the same as uint hex)
 - [X] Support banks
@@ -41,7 +43,7 @@
 
 ## Other stuff
 - [ ] Derive system we're debugging from VICE resopnses
-- [ ] Use different colors for icons in toolbar menu
+- [X] Use different colors for icons in toolbar menu
 - [ ] Add "Connect" and "Quick connect" menu
 - [ ] Add About box
 - [ ] add sprite viewer (all sprites, currently active sprites)

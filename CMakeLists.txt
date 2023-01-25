@@ -31,8 +31,8 @@ include_directories(src)
 
 set(PROJECT_SOURCES
         resources/resources.qrc
-        src/fonts.h
-        src/fonts.cpp
+        src/resources.h
+        src/resources.cpp
         src/dialogs/breakpointdialog.h
         src/dialogs/breakpointdialog.cpp
         src/dialogs/watchdialog.h

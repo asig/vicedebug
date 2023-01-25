@@ -28,27 +28,43 @@
 #include <QToolButton>
 #include <QFuture>
 #include <QMessageBox>
+#include <QShortcut>
 
+#include "resources.h"
 #include "widgets/watcheswidget.h"
 #include "widgets/breakpointswidget.h"
 #include "widgets/registerswidget.h"
 #include "widgets/memorywidget.h"
+
+namespace {
+
+// Colors for buttons: Colors from VS Code Debugger (Visual Studio 2017 Light color scheme):
+// cont, step: 0d79c9,
+// stop: a02a18
+// restart: 3c8a3a
+const QColor kCol1 = Qt::black;
+const QColor kCol2 = QColor(0x0d, 0x79, 0xc9);
+const QColor kCol3 = QColor(0xa0, 0x2a, 0x18);
+const QColor kCol4 = QColor(0x3c, 0x8a, 0x3a);
+
+}
 
 namespace vicedebug {
 
 MainWindow::MainWindow(Controller* controller, QWidget* parent)
     : QMainWindow(parent),
       controller_(controller)
-{   
+{       
+    createActions();
     createToolBar();
     createMenuBar();
     createMainUI();
 
-    stepInBtn_->setEnabled(false);
-    stepOutBtn_->setEnabled(false);
-    stepOverBtn_->setEnabled(false);
-    continueBtn_->setEnabled(false);
-    pauseBtn_->setEnabled(false);
+//    stepInBtn_->setEnabled(false);
+//    stepOutBtn_->setEnabled(false);
+//    stepOverBtn_->setEnabled(false);
+//    continueBtn_->setEnabled(false);
+//    pauseBtn_->setEnabled(false);
 
     connect(controller_, &Controller::connected, this, &MainWindow::onConnected);
     connect(controller_, &Controller::connectionFailed, this, &MainWindow::onConnectionFailed);
@@ -62,58 +78,74 @@ MainWindow::MainWindow(Controller* controller, QWidget* parent)
 MainWindow::~MainWindow() {
 }
 
+void MainWindow::createActions() {
+    QAction* a = new QAction(Resources::loadColoredIcon(kCol1, ":/images/other-icons/connected.svg"), tr("Connect"));
+    a->setShortcut(QKeyCombination(Qt::ALT | Qt::Key_C));
+    a->setCheckable(true);
+    a->setToolTip(a->text() + " (" + tr("Alt+C") + ")");
+    connectAction_ = a;
+    connect(connectAction_, &QAction::triggered, this, &MainWindow::onConnectClicked);
+
+    a = new QAction(Resources::loadColoredIcon(kCol1, ":/images/codicons/debug-disconnect.svg"), tr("Disonnect"));
+    a->setCheckable(true);
+    a->setVisible(false);
+    disconnectAction_ = a;
+    connect(disconnectAction_, &QAction::triggered, this, &MainWindow::onDisconnectClicked);
+
+    emulatorRunning_ = false;
+    a = new QAction(Resources::loadColoredIcon(kCol2, ":/images/codicons/debug-continue.svg"), tr("Continue"));
+    a->setShortcut(Qt::Key_F5);
+    a->setEnabled(false);
+    a->setToolTip(a->text() + " (" + tr("F5") + ")");
+    continueAction_ = a;
+    connect(continueAction_, &QAction::triggered, this, &MainWindow::onContinueClicked);
+
+    a = new QAction(Resources::loadColoredIcon(kCol2, ":/images/codicons/debug-pause.svg"), tr("Pause"));
+    a->setShortcut(Qt::Key_F6);
+    a->setEnabled(false);
+    a->setToolTip(a->text() + " (" + tr("F6") + ")");
+    pauseAction_ = a;
+    connect(pauseAction_, &QAction::triggered, this, &MainWindow::onPauseClicked);
+
+    a = new QAction(Resources::loadColoredIcon(kCol2, ":/images/codicons/debug-step-into.svg"), tr("Step into"));
+    a->setShortcut(Qt::Key_F11);
+    a->setEnabled(false);
+    a->setToolTip(a->text() + " (" + tr("F11") + ")");
+    stepInAction_ = a;
+    connect(stepInAction_, &QAction::triggered, this, &MainWindow::onStepInClicked);
+
+    a = new QAction(Resources::loadColoredIcon(kCol2, ":/images/codicons/debug-step-out.svg"), tr("Step out"));
+    a->setShortcut(QKeyCombination(Qt::SHIFT | Qt::Key_F11));
+    a->setEnabled(false);
+    a->setToolTip(a->text() + " (" + tr("Shift-F11") + ")");
+    stepOutAction_ = a;
+    connect(stepOutAction_, &QAction::triggered, this, &MainWindow::onStepOutClicked);
+
+    a = new QAction(Resources::loadColoredIcon(kCol2, ":/images/codicons/debug-step-over.svg"), tr("Step over"));
+    a->setShortcut(Qt::Key_F10);
+    a->setEnabled(false);
+    a->setToolTip(a->text() + " (" + tr("F10") + ")");
+    stepOverAction_ = a;
+    connect(stepOverAction_, &QAction::triggered, this, &MainWindow::onStepOverClicked);
+
+    // We start with only "continue" visible
+    pauseAction_->setVisible(false);
+}
+
 void MainWindow::createToolBar() {
 #ifdef Q_OS_MACOS
     setUnifiedTitleAndToolBarOnMac(true);
 #endif
 
-    connectBtn_ = new QToolButton();
-    connectBtn_->setCheckable(true);
-    connectBtn_->setText("Connect");
-    connectBtn_->setIcon(QIcon(":/images/other-icons/connected.svg"));
-    connectBtn_->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
-    connect(connectBtn_, &QAbstractButton::clicked, this, &MainWindow::onConnectClicked);
-
-    stepInBtn_ = new QToolButton();
-    stepInBtn_->setText("Step into");
-    stepInBtn_->setIcon(QIcon(":/images/codicons/debug-step-into.svg"));
-    connect(stepInBtn_, &QAbstractButton::clicked, this, &MainWindow::onStepInClicked);
-
-    stepOutBtn_ = new QToolButton();
-    stepOutBtn_->setText("Step out");
-    stepOutBtn_->setIcon(QIcon(":/images/codicons/debug-step-out.svg"));
-    connect(stepOutBtn_, &QAbstractButton::clicked, this, &MainWindow::onStepOutClicked);
-
-    stepOverBtn_ = new QToolButton();
-    stepOverBtn_->setText("Step over");
-    stepOverBtn_->setIcon(QIcon(":/images/codicons/debug-step-over.svg"));
-    connect(stepOverBtn_, &QAbstractButton::clicked, this, &MainWindow::onStepOverClicked);
-
-    continueBtn_ = new QToolButton();
-    continueBtn_->setText("Continue");
-    continueBtn_->setIcon(QIcon(":/images/codicons/debug-continue.svg"));
-    connect(continueBtn_, &QAbstractButton::clicked, this, &MainWindow::onContinueClicked);
-
-    pauseBtn_ = new QToolButton();
-    pauseBtn_->setText("Pause");
-    pauseBtn_->setIcon(QIcon(":/images/codicons/debug-pause.svg"));
-    connect(pauseBtn_, &QAbstractButton::clicked, this, &MainWindow::onPauseClicked);
-
-    __DEBUG__Btn_ = new QToolButton();
-    __DEBUG__Btn_->setCheckable(true);
-    __DEBUG__Btn_->setText("DEBUG");
-    connect(__DEBUG__Btn_, &QAbstractButton::clicked, this, &MainWindow::__DEBUG__Clicked);
-
     QToolBar* tb = new QToolBar("Toolbar", this);
-    tb->addWidget(connectBtn_);
+    tb->addAction(connectAction_);
+    tb->addAction(disconnectAction_);
     tb->addSeparator();
-    tb->addWidget(continueBtn_);
-    tb->addWidget(pauseBtn_);
-    tb->addWidget(stepOverBtn_);
-    tb->addWidget(stepInBtn_);
-    tb->addWidget(stepOutBtn_);
-    tb->addSeparator();
-    tb->addWidget(__DEBUG__Btn_);
+    tb->addAction(continueAction_);
+    tb->addAction(pauseAction_);
+    tb->addAction(stepOverAction_);
+    tb->addAction(stepInAction_);
+    tb->addAction(stepOutAction_);
     addToolBar(tb);
 }
 
@@ -227,12 +259,13 @@ void MainWindow::updateUiState() {
 }
 
 void MainWindow::onConnectClicked() {
-    connectBtn_->setEnabled(false); // We be re-enabled in the connection response
-    if (!controller_->isConnected()) {
-        controller_->connectToVice("127.0.0.1", 6502);
-    } else {
-        controller_->disconnect();
-    }
+    connectAction_->setEnabled(false); // Will be re-enabled in the connection response
+    controller_->connectToVice("127.0.0.1", 6502);
+}
+
+void MainWindow::onDisconnectClicked() {
+    disconnectAction_->setEnabled(false); // Will be re-enabled in the connection response
+    controller_->disconnect();
 }
 
 void MainWindow::onStepInClicked() {
@@ -247,26 +280,26 @@ void MainWindow::onStepOverClicked() {
     controller_->stepOver();
 }
 
-void MainWindow::onPauseClicked() {
-    controller_->pauseExecution();
-}
-
 void MainWindow::onContinueClicked() {
+    continueAction_->setEnabled(false); // Will be re-enabled in the response from the emulator
     controller_->resumeExecution();
 }
 
-void MainWindow::__DEBUG__Clicked() {
-    if (controller_->isConnected()) {
-//        controller_->listBreakpoints();
-    }
+void MainWindow::onPauseClicked() {
+    pauseAction_->setEnabled(false); // Will be re-enabled in the response from the emulator
+    controller_->pauseExecution();
 }
 
 void MainWindow::onConnected(const MachineState& machineState) {
-    connectBtn_->setChecked(true);
-    connectBtn_->setEnabled(true);
-    connectBtn_->setText("Disconnect");
-    connectBtn_->setIcon(QIcon(":/images/codicons/debug-disconnect.svg"));
-    updateDebugControlButtons(false);
+    connectAction_->setVisible(false);
+    connectAction_->setEnabled(false);
+
+    disconnectAction_->setChecked(true);
+    disconnectAction_->setVisible(true);
+    disconnectAction_->setEnabled(true);
+
+    emulatorRunning_ = false;
+    updateDebugControlButtons();
 }
 
 void MainWindow::onConnectionFailed() {
@@ -275,32 +308,40 @@ void MainWindow::onConnectionFailed() {
 }
 
 void MainWindow::onDisconnected() {
-    connectBtn_->setChecked(false);
-    connectBtn_->setEnabled(true);
-    connectBtn_->setText("Connect");
-    connectBtn_->setIcon(QIcon(":/images/other-icons/connected.svg"));
+    disconnectAction_->setVisible(false);
+    disconnectAction_->setEnabled(false);
 
-    stepInBtn_->setEnabled(false);
-    stepOutBtn_->setEnabled(false);
-    stepOverBtn_->setEnabled(false);
-    continueBtn_->setEnabled(false);
-    pauseBtn_->setEnabled(false);
+    connectAction_->setChecked(false);
+    connectAction_->setVisible(true);
+    connectAction_->setEnabled(true);
+
+    stepInAction_->setEnabled(false);
+    stepOutAction_->setEnabled(false);
+    stepOverAction_->setEnabled(false);
+    continueAction_->setEnabled(false);
+    continueAction_->setVisible(true);
+    pauseAction_->setEnabled(false);
+    pauseAction_->setVisible(false);
 }
 
-void MainWindow::updateDebugControlButtons(bool running) {
-    stepInBtn_->setEnabled(!running);
-    stepOutBtn_->setEnabled(!running);
-    stepOverBtn_->setEnabled(!running);
-    continueBtn_->setEnabled(!running);
-    pauseBtn_->setEnabled(running);
+void MainWindow::updateDebugControlButtons() {
+    stepInAction_->setEnabled(!emulatorRunning_);
+    stepOutAction_->setEnabled(!emulatorRunning_);
+    stepOverAction_->setEnabled(!emulatorRunning_);
+    continueAction_->setEnabled(!emulatorRunning_);
+    continueAction_->setVisible(!emulatorRunning_);
+    pauseAction_->setEnabled(emulatorRunning_);
+    pauseAction_->setVisible(emulatorRunning_);
 }
 
 void MainWindow::onExecutionResumed() {
-    updateDebugControlButtons(true);
+    emulatorRunning_ = true;
+    updateDebugControlButtons();
 }
 
 void MainWindow::onExecutionPaused(const MachineState& state) {
-    updateDebugControlButtons(false);
+    emulatorRunning_ = false;
+    updateDebugControlButtons();
 }
 
 }

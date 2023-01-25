@@ -17,33 +17,56 @@
  * along with vicedebug.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "fonts.h"
+#include "resources.h"
 
 #include <QFontDatabase>
 #include <QString>
 #include <QList>
+#include <QColor>
+#include <QFile>
+#include <QIcon>
+#include <QTextStream>
+#include <QTemporaryFile>
 
 namespace vicedebug {
 
-QFont Fonts::robotoMono_;
-QFont Fonts::c64_;
+QFont Resources::robotoMono_;
+QFont Resources::c64_;
 
-void Fonts::init() {
+void Resources::init() {
     robotoMono_ = makeFont(":/fonts/RobotoMono.ttf");
     c64_ = makeFont(":/fonts/C64_Pro_Mono-STYLE.ttf");
 }
 
-QFont Fonts::makeFont(const QString& path) {
+QFont Resources::makeFont(const QString& path) {
     int id = QFontDatabase::addApplicationFont(path);
     QString family = QFontDatabase::applicationFontFamilies(id).at(0);
     return QFont(family);
 }
 
-const QFont& Fonts::robotoMono() {
+QIcon Resources::loadColoredIcon(QColor color, QString iconPath) {
+    QFile f(iconPath);
+    f.open(QFile::ReadOnly | QFile::Text);
+    QTextStream in(&f);
+    QString content = in.readAll();
+    QString colStr = QString::asprintf("#%02x%02x%02x", color.red(), color.green(), color.blue());
+    content.replace("currentColor", colStr);
+
+    QTemporaryFile modified;
+    modified.open();
+    QTextStream out(&modified);
+    out << content;
+    out.flush();
+    modified.close();
+
+    return QIcon(modified.fileName());
+}
+
+const QFont& Resources::robotoMonoFont() {
     return robotoMono_;
 }
 
-const QFont& Fonts::c64() {
+const QFont& Resources::c64Font() {
     return c64_;
 }
 }

@@ -19,7 +19,7 @@
 
 #include "widgets/watcheswidget.h"
 #include "dialogs/watchdialog.h"
-#include "fonts.h"
+#include "resources.h"
 
 #include <QGroupBox>
 #include <QHBoxLayout>
@@ -143,7 +143,7 @@ void WatchesWidget::fillTreeItem(QTreeWidgetItem* item, const Watch& w) {
     item->setText(1, QString::asprintf("%04x", w.addrStart));
     item->setText(2, viewTypeAsStr(w));
     item->setText(3, w.asString(memory_));
-    item->setFont(3, w.viewType == Watch::ViewType::CHARS ? Fonts::c64() : Fonts::robotoMono());
+    item->setFont(3, w.viewType == Watch::ViewType::CHARS ? Resources::c64Font() : Resources::robotoMonoFont());
 }
 
 void WatchesWidget::onConnected(const MachineState& machineState, const Banks& banks, const Breakpoints& breakpoints) {

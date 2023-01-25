@@ -35,7 +35,6 @@ public:
 
     void connectToVice(QString host, int port);
     void disconnect();
-    void continueExecution();
 
     void createBreakpoint(std::uint8_t op, std::uint16_t start, std::uint16_t end, bool enabled);
     void deleteBreakpoint(std::uint32_t breakpointNumber);

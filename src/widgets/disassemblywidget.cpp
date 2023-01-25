@@ -19,7 +19,7 @@
 
 #include "widgets/disassemblywidget.h"
 
-#include "fonts.h"
+#include "resources.h"
 #include "disassembler.h"
 
 #include <QEvent>
@@ -61,7 +61,7 @@ DisassemblyWidget::DisassemblyWidget(Controller* controller, QWidget* parent) :
     content_ = new DisassemblyContent(controller, this);
     setWidgetResizable(true);
     setWidget(content_);
-    setFont(Fonts::robotoMono());
+    setFont(Resources::robotoMonoFont());
 
     connect(controller, &Controller::connected, this, [this]() { this->setEnabled(true);} );
     connect(controller, &Controller::disconnected, this, [this]() { this->setEnabled(false);} );
@@ -86,7 +86,7 @@ DisassemblyContent::DisassemblyContent(Controller* controller, QScrollArea* pare
     QWidget(parent), controller_(controller), mouseDown_(false), highlightedLine_(-1), scrollArea_(parent)
 {
     // Compute the size of the widget:
-    QFontMetrics fm(Fonts::robotoMono());
+    QFontMetrics fm(Resources::robotoMonoFont());
     lineH_ = fm.height();
     ascent_ = fm.ascent();
 

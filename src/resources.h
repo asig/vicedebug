@@ -24,12 +24,13 @@
 
 namespace vicedebug {
 
-class Fonts {
+class Resources {
 
 public:
     static void init();
-    static const QFont& robotoMono();
-    static const QFont& c64();
+    static const QFont& robotoMonoFont();
+    static const QFont& c64Font();
+    static QIcon loadColoredIcon(QColor color, QString iconPath);
 
 private:
     static QFont makeFont(const QString& path);

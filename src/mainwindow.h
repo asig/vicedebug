@@ -37,11 +37,9 @@ public:
     MainWindow(Controller* controller, QWidget *parent);
     ~MainWindow();
 
-private:
-    void updateUiState();
-
 private slots:
     void onConnectClicked();
+    void onDisconnectClicked();
     void onContinueClicked();
     void onPauseClicked();
     void onStepInClicked();
@@ -54,25 +52,26 @@ private slots:
     void onConnectionFailed();
     void onDisconnected();
 
-    void __DEBUG__Clicked();
-
 private:
+    void createActions();
+    void updateUiState();
     void createToolBar();
     void createMenuBar();
     void createMainUI();
 
-    void updateDebugControlButtons(bool running);
+    void updateDebugControlButtons();
 
     DisassemblyWidget* disassembly_;
 
-    QToolButton* connectBtn_;
-    QToolButton* stepInBtn_;
-    QToolButton* stepOutBtn_;
-    QToolButton* stepOverBtn_;
-    QToolButton* continueBtn_;
-    QToolButton* pauseBtn_;
+    QAction* connectAction_;
+    QAction* disconnectAction_;
+    QAction* continueAction_;
+    QAction* pauseAction_;
+    QAction* stepInAction_;
+    QAction* stepOutAction_;
+    QAction* stepOverAction_;
 
-    QToolButton* __DEBUG__Btn_;
+    bool emulatorRunning_;
 
     Controller* controller_;
 };
