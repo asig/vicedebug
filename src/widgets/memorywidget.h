@@ -39,9 +39,6 @@ public:
     MemoryWidget(Controller* controller, QWidget* parent);
     virtual ~MemoryWidget();
 
-protected:
-//    void resizeEvent(QResizeEvent* event) override;
-
 private slots:
     void onConnected(const MachineState& machineState, const Banks& banks, const Breakpoints& breakpoints);
     void onDisconnected();
@@ -76,6 +73,7 @@ signals:
     void memoryChanged(std::uint16_t addr, std::uint8_t newVal);
 
 protected:
+    bool event(QEvent* event) override;
     void paintEvent(QPaintEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
     void focusOutEvent(QFocusEvent* event) override;
@@ -83,12 +81,8 @@ protected:
 
 private:
     void updateSize(int lines);
-
-    void maybeEnterNibbleEditMode(int x, int y);
-    void maybeEnterByteEditMode(int x, int y);
-
+    bool addrAtPos(QPoint pos, std::uint16_t& addr, bool& nibbleMode, int& nibbleOfs);
     void moveCursorRight();
-
     void ensureCursorVisible();
 
     Controller* controller_;
@@ -96,9 +90,12 @@ private:
 
     std::vector<std::uint8_t> memory_;
     std::vector<std::uint8_t> breakpointTypes_;
+    std::vector<const Breakpoint*> breakpoint_;
     std::uint16_t selectedBankId_;
 
     std::uint32_t petsciiBase_; // 0xee00 for uc/graphics, and 0xef00 for lc/uc
+
+    Breakpoints breakpoints_;
 
     // Edit mode variables
     bool editActive_;

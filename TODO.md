@@ -13,7 +13,7 @@
       - [X] allow to select bank
 - [X] Support different banks
 - [X] Highlight read/write breakpoints
-- [ ] Mouse-over addresses with breakpoints shows breakpoint info
+- [X] Mouse-over addresses with breakpoints shows breakpoint info
 - [ ] Context-Menu that allows:
       - [ ] add a watch
       - [ ] add a breakpoint

@@ -32,6 +32,7 @@
 #include <QComboBox>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QToolTip>
 
 #include <iostream>
 
@@ -163,6 +164,7 @@ MemoryContent::MemoryContent(QScrollArea* parent) :
     QWidget(parent), scrollArea_(parent)
 {
     setFocusPolicy(Qt::StrongFocus);
+//    setMouseTracking(true);
 
     // Compute the size of the widget:
     QFontMetrics robotofm(Resources::robotoMonoFont());
@@ -191,17 +193,21 @@ MemoryContent::~MemoryContent() {
 
 void MemoryContent::setMemory(const std::vector<std::uint8_t>& memory, const Breakpoints& breakpoints) {
     memory_ = memory;
+    breakpoints_ = breakpoints;
     breakpointTypes_.resize(memory.size());
+    breakpoint_.resize(memory.size());
     for (int i = 0; i < memory.size(); i++) {
         breakpointTypes_[i] = 0;
+        breakpoint_[i] = nullptr;
     }
-    for (auto bp : breakpoints) {
+    for (const auto& bp : breakpoints_) {
         std::uint8_t op = bp.op & (Breakpoint::Type::READ | Breakpoint::Type::WRITE);
         if (op == 0) {
             continue;
         }
         for (int addr = bp.addrStart; addr <= bp.addrEnd; addr++) {
             breakpointTypes_[addr] = op;
+            breakpoint_[addr] = &bp;
         }
     }
     updateSize(memory_.size() / kBytesPerLine);
@@ -211,6 +217,67 @@ void MemoryContent::setMemory(const std::vector<std::uint8_t>& memory, const Bre
 //void MemoryContent::enableControls(bool enable) {
 //    setEnabled(enable);
 //}
+
+QString formatBpAddr(const Breakpoint* bp) {
+    if (bp->addrStart == bp->addrEnd) {
+        return QString::asprintf("%04x", bp->addrStart);
+    }
+    return QString::asprintf("%04x - %04x", bp->addrStart, bp->addrEnd);
+}
+
+QString formatBpOp(const Breakpoint* bp) {
+    QString s;
+    std::vector<QString> ops;
+    if (bp->op & Breakpoint::Type::READ) {
+        ops.push_back("<b>Load</b>");
+    }
+    if (bp->op & Breakpoint::Type::WRITE) {
+        ops.push_back("<b>Store</b>");
+    }
+    if (bp->op & Breakpoint::Type::EXEC) {
+        ops.push_back("<b>Execute</b>");
+    }
+    switch(ops.size()) {
+    case 3:
+        return ops[0] + ", " + ops[1] + ", and " + ops[2];
+    case 2:
+        return ops[0] + " and " + ops[1];
+    case 1:
+        return ops[0];
+    default:
+        return "WTF????";
+    }
+}
+
+bool MemoryContent::event(QEvent* event) {
+    if (event->type() != QEvent::ToolTip) {
+        return QWidget::event(event);
+    }
+    QHelpEvent *helpEvent = static_cast<QHelpEvent *>(event);
+    QPoint p = helpEvent->pos();
+    std::uint16_t addr;
+    bool dontCareBool;
+    int dontCareInt;
+    bool hideToolTip = true;
+    if (addrAtPos(p, addr, dontCareBool, dontCareInt)) {
+        const Breakpoint* bp = breakpoint_[addr];
+        if (bp != nullptr) {
+            hideToolTip = false;
+            QString tooltip = QString::asprintf("<b>Breakpoint %d</b><br>", bp->number);
+            if (!bp->enabled) {
+                tooltip += "Disabled<br>";
+            }
+            tooltip += "Address: " + formatBpAddr(bp) + "<br>";
+            tooltip += "Break on " + formatBpOp(bp);
+            QToolTip::showText(helpEvent->globalPos(), tooltip);
+        }
+    }
+    if (hideToolTip) {
+        QToolTip::hideText();
+        event->ignore();
+    }
+    return true;
+}
 
 void MemoryContent::paintEvent(QPaintEvent* event) {
     QPainter painter(this);
@@ -300,58 +367,64 @@ void MemoryContent::paintEvent(QPaintEvent* event) {
 void MemoryContent::mousePressEvent(QMouseEvent* event) {
     event->accept();
     QPoint pos = event->pos();
+
+    std::uint16_t addr;
+    int nibbleOfs;
+    if (addrAtPos(pos, addr, nibbleMode_, nibbleOfs)) {
+        editActive_ = true;
+        if (nibbleMode_) {
+            cursorPos_ = 2*addr + nibbleOfs;
+        } else {
+            cursorPos_ = addr;
+        }
+        update();
+        return;
+    }
+}
+
+bool MemoryContent::addrAtPos(QPoint pos, std::uint16_t& addr, bool& nibbleMode, int& nibbleOfs) {
     int x = pos.x();
+    int y = pos.y();
+    int line = y/lineH_;
+
     // Are we in the hex part?
     int leftEdge = borderW_ + addressW_ + separatorW_;
     int rightEdge = borderW_ + addressW_ + separatorW_ + kBytesPerLine * hexSpaceW_ - hexCharW_;
     if (x >= leftEdge && x < rightEdge) {
-        maybeEnterNibbleEditMode(x - leftEdge, pos.y());
-    } else {
-        // Are we in the text part?
-        leftEdge = borderW_ + addressW_ + separatorW_ + kBytesPerLine*hexSpaceW_ - hexCharW_ + separatorW_;
-        rightEdge = borderW_ + addressW_ + separatorW_ + kBytesPerLine*hexSpaceW_ - hexCharW_ + separatorW_ + kBytesPerLine * charW_;
-        if (x >= leftEdge && x < rightEdge) {
-            maybeEnterByteEditMode(x - leftEdge, pos.y());
+        // Maybe we're in nibble mode!
+        x -= leftEdge;
+        int byteOfs = x / hexSpaceW_;
+        x = x % hexSpaceW_;
+        nibbleOfs = x / hexCharW_;
+        // Are we on a separator space?
+        if (nibbleOfs == 2) {
+            // Yes
+            return false;
         }
-    }
-}
 
-void MemoryContent::maybeEnterNibbleEditMode(int x, int y) {
-    int byteOfs = x / hexSpaceW_;
-    x = x % hexSpaceW_;
-    int nibbleOfs = x / hexCharW_;
-
-    // Are we on a separator space?
-    if (nibbleOfs == 2) {
-        return;
+        addr = line * kBytesPerLine + byteOfs;
+        if (addr >= memory_.size()) {
+            // Out of bounds
+            return false;
+        }
+        nibbleMode = true;
+        return true;
     }
 
-    int line = y/lineH_;
-    int bytePos = line * kBytesPerLine + byteOfs;
-    if (bytePos >= memory_.size()) {
-        // Out of bounds
-        return;
+    // Are we in the text part?
+    leftEdge = borderW_ + addressW_ + separatorW_ + kBytesPerLine*hexSpaceW_ - hexCharW_ + separatorW_;
+    rightEdge = borderW_ + addressW_ + separatorW_ + kBytesPerLine*hexSpaceW_ - hexCharW_ + separatorW_ + kBytesPerLine * charW_;
+    if (x >= leftEdge && x < rightEdge) {
+        x -= leftEdge;
+        x /= charW_; // x is now the "character pos"
+        addr = line * kBytesPerLine + x;
+        if (addr >= memory_.size()) {
+            // Out of bounds
+            return false;
+        }
+        return true;
     }
-
-    editActive_ = true;
-    nibbleMode_ = true;
-    cursorPos_ = 2*bytePos + nibbleOfs;
-    update();
-}
-
-void MemoryContent::maybeEnterByteEditMode(int x, int y) {
-    x /= charW_; // x is now the "character pos"
-    int line = y/lineH_;
-    int bytePos = line * kBytesPerLine + x;
-    if (bytePos >= memory_.size()) {
-        // Out of bounds
-        return;
-    }
-
-    editActive_ = true;
-    nibbleMode_ = false;
-    cursorPos_ = bytePos;
-    update();
+    return false;
 }
 
 void MemoryContent::focusOutEvent(QFocusEvent* event) {
