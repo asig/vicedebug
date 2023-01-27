@@ -42,7 +42,6 @@ QLineEdit* createLineEdit(int len) {
     int minW = e->fontMetrics().boundingRect("W").width() * (len+1);
     e->setFixedWidth(minW);
 
-//    e->setText(QString("0").repeated(len));
     return e;    
 }
 
@@ -104,18 +103,9 @@ RegistersWidget::RegistersWidget(Controller* controller, QWidget* parent) :
 
     enableControls(false);
     clearControls();
-
-
-//    DisassemblyWidget
-
-//    controllerEventListener_ = [this] (const Event& ev) {
-//        this->onEventFromController(ev);
-//    };
-//    controller_->addListener(&controllerEventListener_);
 }
 
 RegistersWidget::~RegistersWidget() {
-//    controller_->removeListener(&controllerEventListener_);
 }
 
 void RegistersWidget::enableControls(bool enable) {
