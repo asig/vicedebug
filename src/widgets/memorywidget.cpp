@@ -55,6 +55,16 @@ const QColor kFgDisabled = QColor(Qt::lightGray).lighter(80);
 constexpr const std::uint32_t kPetsciiUCBase = 0xee00;
 constexpr const std::uint32_t kPetsciiLCBase = 0xef00;
 
+Watches filterByBank(const Watches& watches, int bank) {
+    Watches res;
+    for (const auto& w : watches) {
+        if (w.bankId == bank) {
+            res.push_back(w);
+        }
+    }
+    return res;
+}
+
 }
 
 MemoryWidget::MemoryWidget(Controller* controller, QWidget* parent) :
@@ -79,7 +89,7 @@ MemoryWidget::MemoryWidget(Controller* controller, QWidget* parent) :
     connect(bankCombo_, &QComboBox::currentIndexChanged, [this](int index) {
         selectedBank_ = index;
         if (selectedBank_ < memory_.size()) {
-            content_->setMemory(memory_.at(selectedBank_), selectedBank_ == 0 ? breakpoints_ : Breakpoints()); // So far, breakpoints are only supported for default bank...
+            content_->setMemory(memory_.at(selectedBank_), selectedBank_ == 0 ? breakpoints_ : Breakpoints(), filterByBank(watches_,selectedBank_), selectedBank_ == 0); // So far, breakpoints are only supported for default bank...
         }
     });
     QHBoxLayout* toolbar = new QHBoxLayout();
@@ -100,6 +110,7 @@ MemoryWidget::MemoryWidget(Controller* controller, QWidget* parent) :
     connect(controller, &Controller::executionResumed, this, &MemoryWidget::onExecutionResumed);
     connect(controller, &Controller::memoryChanged, this, &MemoryWidget::onMemoryChanged);
     connect(controller, &Controller::breakpointsChanged, this, &MemoryWidget::onBreakpointsChanged);
+    connect(controller, &Controller::watchesChanged, this, &MemoryWidget::onWatchesChanged);
 
     setEnabled(false);
 }
@@ -116,13 +127,13 @@ void MemoryWidget::onConnected(const MachineState& machineState, const Banks& ba
     bankCombo_->setCurrentIndex(0);
     memory_ = machineState.memory;
     breakpoints_ = breakpoints;
-    content_->setMemory(memory_.at(selectedBank_), selectedBank_ == 0 ? breakpoints_ : Breakpoints()); // So far, breakpoints are only supported for default bank...
+    content_->setMemory(memory_.at(selectedBank_), selectedBank_ == 0 ? breakpoints_ : Breakpoints(), filterByBank(watches_,selectedBank_), selectedBank_ == 0); // So far, breakpoints are only supported for default bank...
     setEnabled(true);
 }
 
 void MemoryWidget::onDisconnected() {
     memory_.clear();
-    content_->setMemory({}, {});
+    content_->setMemory({}, {}, {}, false);
     setEnabled(false);
 }
 
@@ -140,7 +151,7 @@ void MemoryWidget::onExecutionResumed() {
 
 void MemoryWidget::onExecutionPaused(const MachineState& machineState) {
     memory_ = machineState.memory;
-    content_->setMemory(memory_.at(selectedBank_), selectedBank_ == 0 ? breakpoints_ : Breakpoints()); // So far, breakpoints are only supported for default bank...
+    content_->setMemory(memory_.at(selectedBank_), selectedBank_ == 0 ? breakpoints_ : Breakpoints(), filterByBank(watches_,selectedBank_), selectedBank_ == 0); // So far, breakpoints are only supported for default bank...
     setEnabled(true);
     update();
 }
@@ -150,13 +161,17 @@ void MemoryWidget::onMemoryChanged(std::uint16_t bankId, std::uint16_t addr, std
     for (auto b : data) {
         mem[addr++] = b;
     }
-    content_->setMemory(memory_.at(selectedBank_), selectedBank_ == 0 ? breakpoints_ : Breakpoints()); // So far, breakpoints are only supported for default bank...
+    content_->setMemory(memory_.at(selectedBank_), selectedBank_ == 0 ? breakpoints_ : Breakpoints(), filterByBank(watches_,selectedBank_), selectedBank_ == 0); // So far, breakpoints are only supported for default bank...
 }
-
 
 void MemoryWidget::onBreakpointsChanged(const Breakpoints& breakpoints) {
     breakpoints_ = breakpoints;
-    content_->setMemory(memory_.at(selectedBank_), selectedBank_ == 0 ? breakpoints_ : Breakpoints()); // So far, breakpoints are only supported for default bank...
+    content_->setMemory(memory_.at(selectedBank_), selectedBank_ == 0 ? breakpoints_ : Breakpoints(), filterByBank(watches_,selectedBank_), selectedBank_ == 0); // So far, breakpoints are only supported for default bank...
+}
+
+void MemoryWidget::onWatchesChanged(const Watches& watches) {
+    watches_ = watches;
+    content_->setMemory(memory_.at(selectedBank_), selectedBank_ == 0 ? breakpoints_ : Breakpoints(), filterByBank(watches_,selectedBank_), selectedBank_ == 0); // So far, breakpoints are only supported for default bank...
 }
 
 MemoryContent::MemoryContent(Controller* controller, QScrollArea* parent) :
@@ -187,14 +202,18 @@ MemoryContent::MemoryContent(Controller* controller, QScrollArea* parent) :
 MemoryContent::~MemoryContent() {
 }
 
-void MemoryContent::setMemory(const std::vector<std::uint8_t>& memory, const Breakpoints& breakpoints) {
+void MemoryContent::setMemory(const std::vector<std::uint8_t>& memory, const Breakpoints& breakpoints, const Watches& watches, bool canHaveBreakpoints) {
+    canHaveBreakpoints_ = canHaveBreakpoints;
     memory_ = memory;
     breakpoints_ = breakpoints;
+    watches_ = watches;
     breakpointTypes_.resize(memory.size());
     breakpoint_.resize(memory.size());
+    watch_.resize(memory.size());
     for (int i = 0; i < memory.size(); i++) {
         breakpointTypes_[i] = 0;
         breakpoint_[i] = nullptr;
+        watch_[i] = nullptr;
     }
     for (const auto& bp : breakpoints_) {
         std::uint8_t op = bp.op & (Breakpoint::Type::READ | Breakpoint::Type::WRITE);
@@ -204,6 +223,11 @@ void MemoryContent::setMemory(const std::vector<std::uint8_t>& memory, const Bre
         for (int addr = bp.addrStart; addr <= bp.addrEnd; addr++) {
             breakpointTypes_[addr] = op;
             breakpoint_[addr] = &bp;
+        }
+    }
+    for (const auto& w : watches_) {
+        for (std::uint16_t addr = w.addrStart; addr < w.addrStart + w.len; addr++) {
+            watch_[addr] = &w;
         }
     }
     updateSize(memory_.size() / kBytesPerLine);
@@ -289,20 +313,18 @@ void MemoryContent::contextMenuEvent(QContextMenuEvent* event) {
         connect(menu.addAction(label), &QAction::triggered, [bp, this] {
             controller_->enableBreakpoint(bp->number, !bp->enabled);
         });
-    } else {
-        if (selectedBankId_ == 0) {
-            // So far, breakpoints are only available in "main" bank...
-            QMenu* submenu = menu.addMenu("Add breakpoint...");
-            connect(submenu->addAction("Break on load"), &QAction::triggered, [addr, this] {
-                controller_->createBreakpoint(Breakpoint::Type::READ, addr, addr, true);
-            });
-            connect(submenu->addAction("Break on store"), &QAction::triggered, [addr, this] {
-                controller_->createBreakpoint(Breakpoint::Type::WRITE, addr, addr, true);
-            });
-            connect(submenu->addAction("Break on both"), &QAction::triggered, [addr, this] {
-                controller_->createBreakpoint(Breakpoint::Type::READ | Breakpoint::Type::WRITE, addr, addr, true);
-            });
-        }
+    } else if (canHaveBreakpoints_) {
+        // So far, breakpoints are only available in "main" bank...
+        QMenu* submenu = menu.addMenu("Add breakpoint...");
+        connect(submenu->addAction("Break on load"), &QAction::triggered, [addr, this] {
+            controller_->createBreakpoint(Breakpoint::Type::READ, addr, addr, true);
+        });
+        connect(submenu->addAction("Break on store"), &QAction::triggered, [addr, this] {
+            controller_->createBreakpoint(Breakpoint::Type::WRITE, addr, addr, true);
+        });
+        connect(submenu->addAction("Break on both"), &QAction::triggered, [addr, this] {
+            controller_->createBreakpoint(Breakpoint::Type::READ | Breakpoint::Type::WRITE, addr, addr, true);
+        });
     }
     QMenu* submenu = menu.addMenu("Add watch...");
     connect(submenu->addAction("int8"), &QAction::triggered, [addr, this] {
@@ -323,8 +345,9 @@ void MemoryContent::paintEvent(QPaintEvent* event) {
     auto fgSelected = isEnabled() ? kFgSelected : kFgDisabled;
     auto bgSelected = isEnabled() ? kBgSelected : kBgDisabled;
 
-    QBrush bpEnableddBg = QBrush(QColor(255,0,0,100));
-    QBrush bpDisabledBg = QBrush(QColor(255,0,0,50));
+    QColor bpEnabledBgCol = QColor(255,0,0,150);
+    QColor bpDisabledBgCol = QColor(255,0,0,100);
+    QColor watchBgCol = QColor(0,0,255,100);
 
     painter.setPen(fg);
     painter.setBackgroundMode(Qt::OpaqueMode);
@@ -345,7 +368,10 @@ void MemoryContent::paintEvent(QPaintEvent* event) {
         for (int i = 0; i < kBytesPerLine; i++) {
             QString hex;
             QString text;
+            int hexX = borderW_ + addressW_ + separatorW_ + i*hexSpaceW_;
+            int textX = borderW_ + addressW_ + separatorW_ + kBytesPerLine*hexSpaceW_ - hexCharW_ + separatorW_ + i * charW_;
             const Breakpoint* bp = breakpoint_[pos + i];
+            const Watch* w = watch_[pos+i];
             if (pos + i < memSize) {
                 std::uint8_t c = memory_[pos+i];
                 hex = QString::asprintf("%02X ", c);
@@ -354,15 +380,32 @@ void MemoryContent::paintEvent(QPaintEvent* event) {
                 hex = "   ";
                 text = " ";
             }
-            if (bp) {
-                painter.setBackground(QBrush(bp->enabled ? bpEnableddBg : bpDisabledBg));
+            if (bp != nullptr || w != nullptr) {
+                QColor bpBgCol = (bp != nullptr && bp->enabled) ? bpEnabledBgCol : bpDisabledBgCol;
+                if (w == nullptr) { // Only breakpoint
+                    painter.setBrush(bpBgCol);
+                } else if (bp == nullptr) { // Only Watch
+                    painter.setBrush(watchBgCol);
+                } else { // both
+                    QLinearGradient grad(QPointF(0, y - ascent_), QPointF(0, y - ascent_ + lineH_));
+                    grad.setColorAt(0, bpBgCol);
+                    grad.setColorAt(1, watchBgCol);
+                    painter.setBrush(grad);
+                }
+
+                painter.setPen(Qt::NoPen);
+                painter.drawRect(hexX, y - ascent_, hexSpaceW_ - hexCharW_, lineH_);
+                painter.drawRect(textX, y - ascent_, charW_, lineH_);
+                painter.setPen(kBg);
+                painter.setBackgroundMode(Qt::TransparentMode);
             }
-            painter.setFont(Resources::robotoMonoFont());
-            painter.drawText(borderW_ + addressW_ + separatorW_ + i*hexSpaceW_, y, hex);
+            painter.setFont(Resources::robotoMonoFont());            
+            painter.drawText(hexX, y, hex);
             painter.setFont(Resources::c64Font());
-            painter.drawText(borderW_ + addressW_ + separatorW_ + kBytesPerLine*hexSpaceW_ - hexCharW_ + separatorW_ + i * charW_ , y, text);
-            if (bp) {
-                painter.setBackground(QBrush(bg));
+            painter.drawText(textX , y, text);
+            if (bp || w) {
+                painter.setBackgroundMode(Qt::OpaqueMode);
+                painter.setPen(fg);
             }
         }
 

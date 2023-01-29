@@ -46,6 +46,7 @@ private slots:
     void onExecutionPaused(const MachineState& machineState);
     void onMemoryChanged(std::uint16_t bankId, std::uint16_t addr, std::vector<std::uint8_t> data);
     void onBreakpointsChanged(const Breakpoints& breakpoints);
+    void onWatchesChanged(const Watches& watches);
 
 private:
     Controller* controller_;
@@ -57,6 +58,7 @@ private:
     int selectedBank_;
     std::unordered_map<std::uint16_t, std::vector<std::uint8_t>> memory_;
     Breakpoints breakpoints_;
+    Watches watches_;
 };
 
 class MemoryContent : public QWidget {
@@ -67,7 +69,7 @@ public:
     virtual ~MemoryContent();
 
 public:
-    void setMemory(const std::vector<std::uint8_t>& memory, const Breakpoints& breakpoints);
+    void setMemory(const std::vector<std::uint8_t>& memory, const Breakpoints& breakpoints, const Watches& watches, bool canHaveBreakpoints);
 
 signals:
     void memoryChanged(std::uint16_t addr, std::uint8_t newVal);
@@ -89,14 +91,16 @@ private:
     Controller* controller_;
     QScrollArea* scrollArea_;
 
+    bool canHaveBreakpoints_;
     std::vector<std::uint8_t> memory_;
     std::vector<std::uint8_t> breakpointTypes_;
     std::vector<const Breakpoint*> breakpoint_;
-    std::uint16_t selectedBankId_;
+    std::vector<const Watch*> watch_;
 
     std::uint32_t petsciiBase_; // 0xee00 for uc/graphics, and 0xef00 for lc/uc
 
     Breakpoints breakpoints_;
+    Watches watches_;
 
     // Edit mode variables
     bool editActive_;
