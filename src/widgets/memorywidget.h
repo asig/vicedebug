@@ -63,7 +63,7 @@ class MemoryContent : public QWidget {
     Q_OBJECT
 
 public:
-    MemoryContent(QScrollArea* parent);
+    MemoryContent(Controller* controller, QScrollArea* parent);
     virtual ~MemoryContent();
 
 public:
@@ -74,6 +74,7 @@ signals:
 
 protected:
     bool event(QEvent* event) override;
+    void contextMenuEvent(QContextMenuEvent* event) override;
     void paintEvent(QPaintEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
     void focusOutEvent(QFocusEvent* event) override;
