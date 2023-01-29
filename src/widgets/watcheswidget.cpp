@@ -120,7 +120,7 @@ Bank WatchesWidget::bankById(std::uint32_t id) {
 void WatchesWidget::updateTree() {
     // Modify existing tree items
     int i = 0;
-    while (i < tree_->topLevelItemCount() && i < watches_.size()) {
+    for (; i < tree_->topLevelItemCount() && i < watches_.size(); i++) {
         QTreeWidgetItem* item = tree_->topLevelItem(i);
         fillTreeItem(item, watches_[i]);
     }
@@ -131,9 +131,9 @@ void WatchesWidget::updateTree() {
     }
 
     // Insert missing items
-    while (i < watches_.size()) {
+    for (; i < watches_.size(); i++) {
         QTreeWidgetItem* item = new QTreeWidgetItem();
-        fillTreeItem(item, watches_[i++]);
+        fillTreeItem(item, watches_[i]);
         tree_->insertTopLevelItem(tree_->topLevelItemCount(), item);
     }
 }
