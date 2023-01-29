@@ -46,12 +46,11 @@ private slots:
     void onExecutionResumed();
     void onExecutionPaused(const MachineState& machineState);
     void onMemoryChanged(std::uint16_t bankId, std::uint16_t address, const std::vector<std::uint8_t>& data);
+    void onWatchesChanged(const Watches& watches);
 
 private:
     void enableControls(bool enable);
     void clearTree();
-    void fillTree();
-    void appendWatchToTree(const Watch& w);
     void updateTree();
     void fillTreeItem(QTreeWidgetItem* item, const Watch& w);
 

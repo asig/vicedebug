@@ -64,6 +64,7 @@ WatchesWidget::WatchesWidget(Controller* controller, QWidget* parent) :
     connect(controller_, &Controller::executionPaused, this, &WatchesWidget::onExecutionPaused);
     connect(controller_, &Controller::executionResumed, this, &WatchesWidget::onExecutionResumed);
     connect(controller_, &Controller::memoryChanged, this, &WatchesWidget::onMemoryChanged);
+    connect(controller_, &Controller::watchesChanged, this, &WatchesWidget::onWatchesChanged);
 
     enableControls(false);
 }
@@ -116,24 +117,24 @@ Bank WatchesWidget::bankById(std::uint32_t id) {
     return Bank();
 }
 
-void WatchesWidget::appendWatchToTree(const Watch& w) {
-    Bank bank = bankById(w.bankId);
-    QTreeWidgetItem* item = new QTreeWidgetItem();
-    fillTreeItem(item, w);
-    tree_->insertTopLevelItem(tree_->topLevelItemCount(), item);
-}
-
-void WatchesWidget::fillTree() {
-    for (Watch w : watches_) {
-        appendWatchToTree(w);
-    }
-}
-
 void WatchesWidget::updateTree() {
-    for (int i = 0; i < watches_.size(); i++) {
-        const Watch& w = watches_[i];
+    // Modify existing tree items
+    int i = 0;
+    while (i < tree_->topLevelItemCount() && i < watches_.size()) {
         QTreeWidgetItem* item = tree_->topLevelItem(i);
-        fillTreeItem(item, w);
+        fillTreeItem(item, watches_[i]);
+    }
+
+    // Delete unused tree items
+    while (i < tree_->topLevelItemCount()) {
+        tree_->takeTopLevelItem(i);
+    }
+
+    // Insert missing items
+    while (i < watches_.size()) {
+        QTreeWidgetItem* item = new QTreeWidgetItem();
+        fillTreeItem(item, watches_[i++]);
+        tree_->insertTopLevelItem(tree_->topLevelItemCount(), item);
     }
 }
 
@@ -150,7 +151,7 @@ void WatchesWidget::onConnected(const MachineState& machineState, const Banks& b
     enableControls(true);
     memory_ = machineState.memory;
     banks_ = banks;
-    fillTree();
+    updateTree();
 }
 
 void WatchesWidget::onDisconnected() {
@@ -170,6 +171,11 @@ void WatchesWidget::onMemoryChanged(std::uint16_t bankId, std::uint16_t address,
     updateTree();
 }
 
+void WatchesWidget::onWatchesChanged(const Watches& watches) {
+    watches_ = watches;
+    updateTree();
+}
+
 void WatchesWidget::onExecutionPaused(const MachineState& machineState) {
     enableControls(true);
     memory_ = machineState.memory;
@@ -183,11 +189,12 @@ void WatchesWidget::onTreeItemSelectionChanged() {
 
 void WatchesWidget::onTreeItemDoubleClicked(QTreeWidgetItem* item, int column) {
     int idx = item->data(0, Qt::UserRole).toInt();
-    WatchDialog dlg(banks_, watches_[idx], this);
+    Watch w = watches_[idx];
+    WatchDialog dlg(banks_, w, this);
     int res = dlg.exec();
     if (res == QDialog::DialogCode::Accepted) {
-        watches_[idx] = dlg.watch();
-        updateTree();
+        Watch modified = dlg.watch();
+        controller_->modifyWatch(w.number, modified.viewType, modified.bankId, modified.addrStart, modified.len);
     }
 }
 
@@ -196,8 +203,7 @@ void WatchesWidget::onAddClicked() {
     int res = dlg.exec();
     if (res == QDialog::DialogCode::Accepted) {
         Watch w = dlg.watch();
-        watches_.push_back(w);
-        appendWatchToTree(w);
+        controller_->createWatch(w.viewType, w.bankId, w.addrStart, w.len);
     }
 }
 
@@ -209,9 +215,7 @@ void WatchesWidget::onRemoveClicked() {
     }
 
     int idx = tree_->indexOfTopLevelItem(selected[0]);
-    watches_.erase(watches_.begin() + idx);
-    clearTree();
-    fillTree();
+    controller_->deleteWatch(watches_[idx].number);
 }
 
 

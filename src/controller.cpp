@@ -26,7 +26,8 @@ namespace vicedebug {
 Controller::Controller(ViceClient* viceClient)
     : viceClient_(viceClient),
       connected_(false),
-      ignoreStopped_(true)
+      ignoreStopped_(true),
+      nextWatchNumber_(1)
 {
     connect(viceClient_, &ViceClient::stoppedResponseReceived, this, &Controller::onStoppedReceived);
     connect(viceClient_, &ViceClient::resumedResponseReceived, this, &Controller::onResumedReceived);
@@ -171,6 +172,37 @@ void Controller::emitBreakpoints() {
         bps.push_back(it->second);
     }
     emit breakpointsChanged(bps);
+}
+
+void Controller::createWatch(Watch::ViewType viewType, std::uint16_t bankId, std::uint16_t addr, std::uint16_t len) {
+    Watch w = Watch{nextWatchNumber_++, viewType, bankId, addr, len};
+    watches_.push_back(w);
+    emit watchesChanged(watches_);
+}
+
+void Controller::modifyWatch(std::uint32_t number, Watch::ViewType viewType, std::uint16_t bankId, std::uint16_t addr, std::uint16_t len) {
+    for (int i = 0; i < watches_.size(); i++) {
+        if (watches_[i].number == number) {
+            watches_[i].viewType = viewType;
+            watches_[i].bankId = bankId;
+            watches_[i].addrStart = addr;
+            watches_[i].len = len;
+            emit watchesChanged(watches_);
+            return;
+        }
+    }
+    qWarning() << "modifyWatch: No watch found with number " << number << "!";
+}
+
+void Controller::deleteWatch(std::uint32_t number) {
+    for (auto it = watches_.begin(); it != watches_.end(); ++it) {
+        if (it->number == number) {
+            watches_.erase(it, it);
+            emit watchesChanged(watches_);
+            return;
+        }
+    }
+    qWarning() << "deleteWatch: No watch found with number " << number << "!";
 }
 
 void Controller::updateRegisters(const Registers& registers) {

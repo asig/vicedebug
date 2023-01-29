@@ -24,6 +24,7 @@
 #include "viceclient.h"
 #include "machinestate.h"
 #include "breakpoints.h"
+#include "watches.h"
 
 namespace vicedebug {
 
@@ -39,6 +40,10 @@ public:
     void createBreakpoint(std::uint8_t op, std::uint16_t start, std::uint16_t end, bool enabled);
     void deleteBreakpoint(std::uint32_t breakpointNumber);
     void enableBreakpoint(std::uint32_t breakpointNumber, bool enabled);
+
+    void createWatch(Watch::ViewType viewType, std::uint16_t bankId, std::uint16_t addr, std::uint16_t len);
+    void modifyWatch(std::uint32_t number, Watch::ViewType viewType, std::uint16_t bankId, std::uint16_t addr, std::uint16_t len);
+    void deleteWatch(std::uint32_t number);
 
     bool isConnected() {
         return connected_;
@@ -61,6 +66,7 @@ signals:
     void executionResumed();
     void executionPaused(const MachineState& machineState);
     void breakpointsChanged(const Breakpoints& breakpoints);
+    void watchesChanged(const Watches& watches);
     void registersChanged(const Registers& registers);
     void memoryChanged(std::uint16_t bankId, std::uint16_t address, const std::vector<std::uint8_t>& data);
 
@@ -82,6 +88,8 @@ private:
     ViceClient* viceClient_;
     std::map<std::uint32_t, Breakpoint> breakpoints_;
     Banks availableBanks_;
+    Watches watches_;
+    std::uint32_t nextWatchNumber_;
 };
 
 }
