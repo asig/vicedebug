@@ -1,3 +1,10 @@
+# Bugs
+- Memory Widget
+   - [X] Watch type "float" not highlighted correctly
+
+- Watches Widget
+   - [X] Strings not PETSCII encoded?
+
 # TODO
 
 ## Disassembler Widget
@@ -15,7 +22,7 @@
 - [X] Highlight read/write breakpoints
 - [X] Highlight watches
 - [X] Mouse-over addresses with breakpoints shows breakpoint info
-- [ ] Mouse-over addresses with watches shows watch info
+- [X] Mouse-over addresses with watches shows watch info
 - [ ] Context-Menu that allows:
       - [ ] add a watch
       - [X] add a breakpoint
