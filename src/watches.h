@@ -24,6 +24,8 @@
 
 #include <QString>
 
+#include "petscii.h"
+
 namespace vicedebug {
 
 struct Watch {
@@ -42,7 +44,9 @@ struct Watch {
     std::uint16_t addrStart;
     std::uint16_t len;
 
-    QString asString(const std::unordered_map<std::uint16_t, std::vector<std::uint8_t>>& memory) const;
+    QString asString(const std::unordered_map<std::uint16_t, std::vector<std::uint8_t>>& memory, std::uint32_t petsciiBase = PETSCII::kLCBase) const;
+
+    QString viewTypeAsString() const;
 };
 
 typedef std::vector<Watch> Watches;

@@ -62,10 +62,11 @@ double readFloat(const std::vector<std::uint8_t>& memory, std::uint16_t addr) {
     return res;
 }
 
-QString readString(const std::vector<std::uint8_t>& memory, std::uint16_t addr, int len) {
+// This assumes that the string is displayed in C64font!
+QString readString(const std::vector<std::uint8_t>& memory, std::uint16_t addr, int len, std::uint32_t petsciiBase) {
     QString res;
     while (len-- > 0) {
-        res += QChar(0xee00 + memory[addr++]);
+        res += QChar(petsciiBase + PETSCII::toScreenCode(memory[addr++]));
     }
     return res;
 }
@@ -102,7 +103,7 @@ QString cbmDoubleToString(double d) {
 
 }
 
-QString Watch::asString(const std::unordered_map<std::uint16_t, std::vector<std::uint8_t>>& memory) const {
+QString Watch::asString(const std::unordered_map<std::uint16_t, std::vector<std::uint8_t>>& memory, std::uint32_t petsciiBase) const {
     const std::vector<std::uint8_t>& mem = memory.at(bankId);
     switch(viewType) {
     case INT:
@@ -114,11 +115,36 @@ QString Watch::asString(const std::unordered_map<std::uint16_t, std::vector<std:
     case FLOAT:
         return cbmDoubleToString(readFloat(mem, addrStart));
     case CHARS:
-        return readString(mem, addrStart, len);
+        return readString(mem, addrStart, len, petsciiBase);
     case BYTES:
         return readBytes(mem, addrStart, len);
     }
     return "WTF???";
 };
+
+QString Watch::viewTypeAsString() const {
+    switch(viewType) {
+    case Watch::ViewType::INT:
+        switch(len) {
+        case 1: return "int8";
+        case 2: return "int16";
+        }
+        return "???";
+    case Watch::ViewType::UINT_HEX:
+    case Watch::ViewType::UINT:
+        switch(len) {
+        case 1: return "uint8";
+        case 2: return "uint16";
+        }
+        return "???";
+    case Watch::ViewType::FLOAT:
+        return "float";
+    case Watch::ViewType::CHARS:
+        return QString::asprintf("String(%d)", len);
+    case Watch::ViewType::BYTES:
+        return QString::asprintf("Bytes(%d)", len);
+    }
+    return "???";
+}
 
 }
