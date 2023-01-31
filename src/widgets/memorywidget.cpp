@@ -299,7 +299,31 @@ void MemoryContent::contextMenuEvent(QContextMenuEvent* event) {
     }
     QMenu* submenu = menu.addMenu("Add watch...");
     connect(submenu->addAction("int8"), &QAction::triggered, [addr, this] {
-        qDebug() << "IMPLEMENT ME!";
+        controller_->createWatch(Watch::ViewType::INT, bank_.id, addr, 1);
+    });
+    connect(submenu->addAction("uint8"), &QAction::triggered, [addr, this] {
+        controller_->createWatch(Watch::ViewType::UINT, bank_.id, addr, 1);
+    });
+    connect(submenu->addAction("uint8 (hex)"), &QAction::triggered, [addr, this] {
+        controller_->createWatch(Watch::ViewType::UINT_HEX, bank_.id, addr, 1);
+    });
+    connect(submenu->addAction("int16"), &QAction::triggered, [addr, this] {
+        controller_->createWatch(Watch::ViewType::INT, bank_.id, addr, 2);
+    });
+    connect(submenu->addAction("uint16"), &QAction::triggered, [addr, this] {
+        controller_->createWatch(Watch::ViewType::UINT, bank_.id, addr, 2);
+    });
+    connect(submenu->addAction("uint16 (hex)"), &QAction::triggered, [addr, this] {
+        controller_->createWatch(Watch::ViewType::UINT_HEX, bank_.id, addr, 2);
+    });
+    connect(submenu->addAction("float"), &QAction::triggered, [addr, this] {
+        controller_->createWatch(Watch::ViewType::FLOAT, bank_.id, addr, 5);
+    });
+    connect(submenu->addAction("String"), &QAction::triggered, [addr, this] {
+        controller_->createWatch(Watch::ViewType::CHARS, bank_.id, addr, 16); // Should we instead of a fixed length just show the dialog?
+    });
+    connect(submenu->addAction("Bytes"), &QAction::triggered, [addr, this] {
+        controller_->createWatch(Watch::ViewType::BYTES, bank_.id, addr, 16); // Should we instead of a fixed length just show the dialog?
     });
     menu.exec(event->globalPos());
     event->ignore();

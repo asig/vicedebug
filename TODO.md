@@ -23,8 +23,8 @@
 - [X] Highlight watches
 - [X] Mouse-over addresses with breakpoints shows breakpoint info
 - [X] Mouse-over addresses with watches shows watch info
-- [ ] Context-Menu that allows:
-      - [ ] add a watch
+- [X] Context-Menu that allows:
+      - [X] add a watch
       - [X] add a breakpoint
 
 ## Breakpoints Widget
