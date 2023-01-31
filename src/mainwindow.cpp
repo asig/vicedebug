@@ -60,12 +60,6 @@ MainWindow::MainWindow(Controller* controller, QWidget* parent)
     createMenuBar();
     createMainUI();
 
-//    stepInBtn_->setEnabled(false);
-//    stepOutBtn_->setEnabled(false);
-//    stepOverBtn_->setEnabled(false);
-//    continueBtn_->setEnabled(false);
-//    pauseBtn_->setEnabled(false);
-
     connect(controller_, &Controller::connected, this, &MainWindow::onConnected);
     connect(controller_, &Controller::connectionFailed, this, &MainWindow::onConnectionFailed);
     connect(controller_, &Controller::disconnected, this, &MainWindow::onDisconnected);
@@ -150,7 +144,7 @@ void MainWindow::createToolBar() {
 }
 
 void MainWindow::createMenuBar() {
-    QMenu* fileMenu = menuBar()->addMenu(tr("&File"));
+//    QMenu* fileMenu = menuBar()->addMenu(tr("&File"));
 
 //    menu->addAction(tr("Save layout..."), this, &MainWindow::saveLayout);
 //    menu->addAction(tr("Load layout..."), this, &MainWindow::loadLayout);
@@ -230,15 +224,6 @@ void MainWindow::createMainUI() {
 
 
     MemoryWidget* memoryWidget = new MemoryWidget(controller_, this);
-//    QScrollArea* memoryWidgetScrollArea = new QScrollArea();
-//    memoryWidgetScrollArea->setBackgroundRole(QPalette::Dark);
-//    memoryWidgetScrollArea->setWidget(memoryWdiget);
-//    memoryWidgetScrollArea->setWidgetResizable(true);
-
-//    QScrollArea* disassembltWidgetScrollArea = new QScrollArea();
-//    disassembltWidgetScrollArea->setBackgroundRole(QPalette::Dark);
-//    disassembly_ = new DisassemblyWidget(controller_, disassembltWidgetScrollArea);
-//    disassembltWidgetScrollArea->setWidget(disassembly_);
     DisassemblyWidget* disassembly = new DisassemblyWidget(controller_, this);
 
     QSplitter* upperPart = new QSplitter(Qt::Horizontal);
