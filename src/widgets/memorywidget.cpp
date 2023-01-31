@@ -20,6 +20,7 @@
 #include "widgets/memorywidget.h"
 
 #include "resources.h"
+#include "tooltipgenerators.h"
 #include "petscii.h"
 
 #include <QEvent>
@@ -52,9 +53,6 @@ const QColor kFg = QColor(Qt::black);
 const QColor kFgSelected = QColor(Qt::yellow);
 const QColor kFgDisabled = QColor(Qt::lightGray).lighter(80);
 
-constexpr const std::uint32_t kPetsciiUCBase = 0xee00;
-constexpr const std::uint32_t kPetsciiLCBase = 0xef00;
-
 Watches filterByBank(const Watches& watches, int bank) {
     Watches res;
     for (const auto& w : watches) {
@@ -79,7 +77,7 @@ MemoryWidget::MemoryWidget(Controller* controller, QWidget* parent) :
     scrollArea_ = new QScrollArea(this);
     content_ = new MemoryContent(controller_, scrollArea_);
     connect(content_, &MemoryContent::memoryChanged, this, [this](std::uint16_t addr, std::uint8_t val) {
-        controller_->writeMemory(selectedBank_, addr, val);
+        controller_->writeMemory(selectedBank_.id, addr, val);
     });
     scrollArea_->setWidgetResizable(true);
     scrollArea_->setWidget(content_);
@@ -87,9 +85,9 @@ MemoryWidget::MemoryWidget(Controller* controller, QWidget* parent) :
     // Set up "toolbar"
     bankCombo_ = new QComboBox();
     connect(bankCombo_, &QComboBox::currentIndexChanged, [this](int index) {
-        selectedBank_ = index;
-        if (selectedBank_ < memory_.size()) {
-            content_->setMemory(memory_.at(selectedBank_), selectedBank_ == 0 ? breakpoints_ : Breakpoints(), filterByBank(watches_,selectedBank_), selectedBank_ == 0); // So far, breakpoints are only supported for default bank...
+        selectedBank_ = banks_[index];
+        if (memory_.find(selectedBank_.id) != memory_.end()) {
+            content_->setMemory(memory_, selectedBank_, breakpoints_, watches_); // So far, breakpoints are only supported for default bank...
         }
     });
     QHBoxLayout* toolbar = new QHBoxLayout();
@@ -119,21 +117,22 @@ MemoryWidget::~MemoryWidget() {
 }
 
 void MemoryWidget::onConnected(const MachineState& machineState, const Banks& banks, const Breakpoints& breakpoints) {
+    banks_ = banks;
     bankCombo_->clear();
     for (Bank b : banks) {
         bankCombo_->addItem(b.name.c_str(), QVariant(b.id));
     }
-    selectedBank_ = 0;
+    selectedBank_ = banks[0];
     bankCombo_->setCurrentIndex(0);
     memory_ = machineState.memory;
     breakpoints_ = breakpoints;
-    content_->setMemory(memory_.at(selectedBank_), selectedBank_ == 0 ? breakpoints_ : Breakpoints(), filterByBank(watches_,selectedBank_), selectedBank_ == 0); // So far, breakpoints are only supported for default bank...
+    content_->setMemory(memory_, selectedBank_, breakpoints_, watches_); // So far, breakpoints are only supported for default bank...
     setEnabled(true);
 }
 
 void MemoryWidget::onDisconnected() {
     memory_.clear();
-    content_->setMemory({}, {}, {}, false);
+    content_->setMemory({}, {}, {}, {});
     setEnabled(false);
 }
 
@@ -151,7 +150,7 @@ void MemoryWidget::onExecutionResumed() {
 
 void MemoryWidget::onExecutionPaused(const MachineState& machineState) {
     memory_ = machineState.memory;
-    content_->setMemory(memory_.at(selectedBank_), selectedBank_ == 0 ? breakpoints_ : Breakpoints(), filterByBank(watches_,selectedBank_), selectedBank_ == 0); // So far, breakpoints are only supported for default bank...
+    content_->setMemory(memory_, selectedBank_, breakpoints_, watches_); // So far, breakpoints are only supported for default bank...
     setEnabled(true);
     update();
 }
@@ -161,17 +160,17 @@ void MemoryWidget::onMemoryChanged(std::uint16_t bankId, std::uint16_t addr, std
     for (auto b : data) {
         mem[addr++] = b;
     }
-    content_->setMemory(memory_.at(selectedBank_), selectedBank_ == 0 ? breakpoints_ : Breakpoints(), filterByBank(watches_,selectedBank_), selectedBank_ == 0); // So far, breakpoints are only supported for default bank...
+    content_->setMemory(memory_, selectedBank_, breakpoints_, watches_); // So far, breakpoints are only supported for default bank...
 }
 
 void MemoryWidget::onBreakpointsChanged(const Breakpoints& breakpoints) {
     breakpoints_ = breakpoints;
-    content_->setMemory(memory_.at(selectedBank_), selectedBank_ == 0 ? breakpoints_ : Breakpoints(), filterByBank(watches_,selectedBank_), selectedBank_ == 0); // So far, breakpoints are only supported for default bank...
+    content_->setMemory(memory_, selectedBank_, breakpoints_, watches_); // So far, breakpoints are only supported for default bank...
 }
 
 void MemoryWidget::onWatchesChanged(const Watches& watches) {
     watches_ = watches;
-    content_->setMemory(memory_.at(selectedBank_), selectedBank_ == 0 ? breakpoints_ : Breakpoints(), filterByBank(watches_,selectedBank_), selectedBank_ == 0); // So far, breakpoints are only supported for default bank...
+    content_->setMemory(memory_, selectedBank_, breakpoints_, watches_); // So far, breakpoints are only supported for default bank...
 }
 
 MemoryContent::MemoryContent(Controller* controller, QScrollArea* parent) :
@@ -194,7 +193,7 @@ MemoryContent::MemoryContent(Controller* controller, QScrollArea* parent) :
     lineH_ = c64fm.height() > robotofm.height() ? c64fm.height() : robotofm.height();
 
     editActive_ = false;
-    petsciiBase_ = kPetsciiUCBase;
+    petsciiBase_ = PETSCII::kUCBase;
 
     updateSize(0);
 }
@@ -202,15 +201,15 @@ MemoryContent::MemoryContent(Controller* controller, QScrollArea* parent) :
 MemoryContent::~MemoryContent() {
 }
 
-void MemoryContent::setMemory(const std::vector<std::uint8_t>& memory, const Breakpoints& breakpoints, const Watches& watches, bool canHaveBreakpoints) {
-    canHaveBreakpoints_ = canHaveBreakpoints;
-    memory_ = memory;
-    breakpoints_ = breakpoints;
-    watches_ = watches;
-    breakpointTypes_.resize(memory.size());
-    breakpoint_.resize(memory.size());
-    watch_.resize(memory.size());
-    for (int i = 0; i < memory.size(); i++) {
+void MemoryContent::setMemory(const std::unordered_map<std::uint16_t, std::vector<std::uint8_t>>& memory, const Bank bank, const Breakpoints& breakpoints, const Watches& watches) {
+    bank_ = bank;
+    memory_ = memory.at(bank_.id);
+    breakpoints_ = bank_.id == 0 ? breakpoints : Breakpoints();
+    watches_ = filterByBank(watches, bank_.id);
+    breakpointTypes_.resize(memory_.size());
+    breakpoint_.resize(memory_.size());
+    watch_.resize(memory_.size());
+    for (int i = 0; i < memory_.size(); i++) {
         breakpointTypes_[i] = 0;
         breakpoint_[i] = nullptr;
         watch_[i] = nullptr;
@@ -234,37 +233,6 @@ void MemoryContent::setMemory(const std::vector<std::uint8_t>& memory, const Bre
     update();
 }
 
-QString formatBpAddr(const Breakpoint* bp) {
-    if (bp->addrStart == bp->addrEnd) {
-        return QString::asprintf("%04x", bp->addrStart);
-    }
-    return QString::asprintf("%04x - %04x", bp->addrStart, bp->addrEnd);
-}
-
-QString formatBpOp(const Breakpoint* bp) {
-    QString s;
-    std::vector<QString> ops;
-    if (bp->op & Breakpoint::Type::READ) {
-        ops.push_back("<b>Load</b>");
-    }
-    if (bp->op & Breakpoint::Type::WRITE) {
-        ops.push_back("<b>Store</b>");
-    }
-    if (bp->op & Breakpoint::Type::EXEC) {
-        ops.push_back("<b>Execute</b>");
-    }
-    switch(ops.size()) {
-    case 3:
-        return ops[0] + ", " + ops[1] + ", and " + ops[2];
-    case 2:
-        return ops[0] + " and " + ops[1];
-    case 1:
-        return ops[0];
-    default:
-        return "WTF????";
-    }
-}
-
 bool MemoryContent::event(QEvent* event) {
     if (event->type() != QEvent::ToolTip) {
         return QWidget::event(event);
@@ -276,17 +244,21 @@ bool MemoryContent::event(QEvent* event) {
     int dontCareInt;
     bool hideToolTip = true;
     if (addrAtPos(p, addr, dontCareBool, dontCareInt)) {
+        QString tooltip;
         const Breakpoint* bp = breakpoint_[addr];
         if (bp != nullptr) {
             hideToolTip = false;
-            QString tooltip = QString::asprintf("<b>Breakpoint %d</b><br>", bp->number);
-            if (!bp->enabled) {
-                tooltip += "Disabled<br>";
-            }
-            tooltip += "Address: " + formatBpAddr(bp) + "<br>";
-            tooltip += "Break on " + formatBpOp(bp);
-            QToolTip::showText(helpEvent->globalPos(), tooltip);
+            tooltip = BreakpointTooltipGenerator(*bp).generate();
         }
+        const Watch* w = watch_[addr];
+        if (w != nullptr) {
+            hideToolTip = false;
+            if (tooltip.length() > 0) {
+                tooltip += "<hr>";
+            }
+            tooltip += WatchTooltipGenerator(*w, {bank_}).generate();
+        }
+        QToolTip::showText(helpEvent->globalPos(), tooltip);
     }
     if (hideToolTip) {
         QToolTip::hideText();
@@ -313,8 +285,7 @@ void MemoryContent::contextMenuEvent(QContextMenuEvent* event) {
         connect(menu.addAction(label), &QAction::triggered, [bp, this] {
             controller_->enableBreakpoint(bp->number, !bp->enabled);
         });
-    } else if (canHaveBreakpoints_) {
-        // So far, breakpoints are only available in "main" bank...
+    } else if (bank_.id == 0) { // So far, breakpoints are only available in "main" bank...
         QMenu* submenu = menu.addMenu("Add breakpoint...");
         connect(submenu->addAction("Break on load"), &QAction::triggered, [addr, this] {
             controller_->createBreakpoint(Breakpoint::Type::READ, addr, addr, true);

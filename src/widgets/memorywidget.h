@@ -55,7 +55,8 @@ private:
     QScrollArea* scrollArea_;
     MemoryContent* content_;
 
-    int selectedBank_;
+    Banks banks_;
+    Bank selectedBank_;
     std::unordered_map<std::uint16_t, std::vector<std::uint8_t>> memory_;
     Breakpoints breakpoints_;
     Watches watches_;
@@ -69,7 +70,7 @@ public:
     virtual ~MemoryContent();
 
 public:
-    void setMemory(const std::vector<std::uint8_t>& memory, const Breakpoints& breakpoints, const Watches& watches, bool canHaveBreakpoints);
+    void setMemory(const std::unordered_map<std::uint16_t, std::vector<std::uint8_t>>& memory, const Bank bank, const Breakpoints& breakpoints, const Watches& watches);
 
 signals:
     void memoryChanged(std::uint16_t addr, std::uint8_t newVal);
@@ -91,7 +92,6 @@ private:
     Controller* controller_;
     QScrollArea* scrollArea_;
 
-    bool canHaveBreakpoints_;
     std::vector<std::uint8_t> memory_;
     std::vector<std::uint8_t> breakpointTypes_;
     std::vector<const Breakpoint*> breakpoint_;
@@ -101,6 +101,7 @@ private:
 
     Breakpoints breakpoints_;
     Watches watches_;
+    Bank bank_;
 
     // Edit mode variables
     bool editActive_;
