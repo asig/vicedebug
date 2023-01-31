@@ -98,7 +98,7 @@ void WatchDialog::setupUI() {
     viewtype_->addItem("int16", QVariant( { QVariant(Watch::ViewType::INT), QVariant(2) } ));
     viewtype_->addItem("uint16", QVariant( { QVariant(Watch::ViewType::UINT), QVariant(2) } ));
     viewtype_->addItem("uint16 (hex)", QVariant( { QVariant(Watch::ViewType::UINT_HEX), QVariant(2) } ));
-    viewtype_->addItem("float", QVariant( { QVariant(Watch::ViewType::FLOAT), QVariant(0) } ));
+    viewtype_->addItem("float", QVariant( { QVariant(Watch::ViewType::FLOAT), QVariant(5) } ));
     viewtype_->addItem("string", QVariant( { QVariant(Watch::ViewType::CHARS), QVariant(0) } ));
     viewtype_->addItem("bytes", QVariant( { QVariant(Watch::ViewType::BYTES), QVariant(0) } ));
     connect(viewtype_, &QComboBox::currentIndexChanged, this, &WatchDialog::onViewtypeChanged);
