@@ -52,7 +52,7 @@ private:
     void enableControls(bool enable);
     void clearTree();
     void updateTree();
-    void fillTreeItem(QTreeWidgetItem* item, const Watch& w);
+    void fillTreeItem(QTreeWidgetItem* item, const Watch& w, int idx);
 
     Bank bankById(std::uint32_t id);
 

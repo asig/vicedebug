@@ -83,31 +83,6 @@ void WatchesWidget::clearTree() {
     tree_->clear();
 }
 
-QString viewTypeAsStr(const Watch& w) {
-    switch(w.viewType) {
-    case Watch::ViewType::INT:
-        switch(w.len) {
-        case 1: return "int8";
-        case 2: return "int16";
-        }
-        return "???";
-    case Watch::ViewType::UINT_HEX:
-    case Watch::ViewType::UINT:
-        switch(w.len) {
-        case 1: return "uint8";
-        case 2: return "uint16";
-        }
-        return "???";
-    case Watch::ViewType::FLOAT:
-        return "float";
-    case Watch::ViewType::CHARS:
-        return QString::asprintf("String(%d)", w.len);
-    case Watch::ViewType::BYTES:
-        return QString::asprintf("Bytes(%d)", w.len);
-    }
-    return "???";
-}
-
 Bank WatchesWidget::bankById(std::uint32_t id) {
     for (auto b : banks_) {
         if (b.id == id) {
@@ -122,7 +97,7 @@ void WatchesWidget::updateTree() {
     int i = 0;
     for (; i < tree_->topLevelItemCount() && i < watches_.size(); i++) {
         QTreeWidgetItem* item = tree_->topLevelItem(i);
-        fillTreeItem(item, watches_[i]);
+        fillTreeItem(item, watches_[i], i);
     }
 
     // Delete unused tree items
@@ -133,18 +108,19 @@ void WatchesWidget::updateTree() {
     // Insert missing items
     for (; i < watches_.size(); i++) {
         QTreeWidgetItem* item = new QTreeWidgetItem();
-        fillTreeItem(item, watches_[i]);
+        fillTreeItem(item, watches_[i], i);
         tree_->insertTopLevelItem(tree_->topLevelItemCount(), item);
     }
 }
 
-void WatchesWidget::fillTreeItem(QTreeWidgetItem* item, const Watch& w) {
+void WatchesWidget::fillTreeItem(QTreeWidgetItem* item, const Watch& w, int idx) {
     Bank bank = bankById(w.bankId);
     item->setText(0, bank.name.c_str());
     item->setText(1, QString::asprintf("%04x", w.addrStart));
-    item->setText(2, viewTypeAsStr(w));
+    item->setText(2, w.viewTypeAsString());
     item->setText(3, w.asString(memory_));
     item->setFont(3, w.viewType == Watch::ViewType::CHARS ? Resources::c64Font() : Resources::robotoMonoFont());
+    item->setData(0, Qt::UserRole, idx);
 }
 
 void WatchesWidget::onConnected(const MachineState& machineState, const Banks& banks, const Breakpoints& breakpoints) {
