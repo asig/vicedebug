@@ -66,6 +66,8 @@ set(PROJECT_SOURCES
         src/mainwindow.h
         src/focuswatcher.h
         src/focuswatcher.cpp
+        src/tooltipgenerators.h
+        src/tooltipgenerators.cpp
         src/main.cpp
 )
 
