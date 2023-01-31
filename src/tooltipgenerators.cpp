@@ -18,7 +18,6 @@
  */
 
 #include "tooltipgenerators.h"
-#include "machinestate.h"
 
 namespace vicedebug {
 
@@ -56,7 +55,6 @@ QString formatBpOp(const Breakpoint& bp) {
 }
 
 }
-
 
 QString BreakpointTooltipGenerator::generate() const {
     QString tooltip = QString::asprintf("<b>Breakpoint %d</b><br>", bp_.number);
