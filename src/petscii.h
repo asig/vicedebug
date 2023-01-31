@@ -25,6 +25,9 @@ namespace vicedebug {
 
 class PETSCII {
 public:
+    static constexpr const std::uint32_t kUCBase = 0xee00;
+    static constexpr const std::uint32_t kLCBase = 0xef00;
+
     static bool isPrintable(std::uint8_t c) {
         bool isCtrl = c < 32 || (128 <= c && c < 160);
         return !isCtrl;
