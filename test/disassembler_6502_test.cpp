@@ -24,30 +24,33 @@
 #include <cstdint>
 
 #include "disassembler.h"
+#include "disassembler_6502.h"
 
 namespace vicedebug {
 
-class DisassemblerTest: public QObject
+class Disassembler6502Test: public QObject
 {
     Q_OBJECT
 
 private:
     std::vector<std::uint8_t> memory_;
-    vicedebug::Disassembler disassembler_;
+    vicedebug::Disassembler6502 disassembler_;
 
     void verifyLine(const Disassembler::Line& line, std::uint16_t addr, std::vector<std::uint8_t> bytes, std::string disassembly) {
-        QVERIFY(line.addr == addr);
-        QVERIFY(line.bytes.size() == bytes.size());
+        QVERIFY2(line.addr == addr, qPrintable(QString("Expected address %1, but got %2").arg(addr).arg(line.addr)));
+        QVERIFY2(line.bytes.size() == bytes.size(), qPrintable(QString("Address %1: Expected %2 bytes, but got %3").arg(addr).arg(bytes.size()).arg(line.bytes.size())));
         for (int i = 0; i < bytes.size(); i++) {
-            QVERIFY(line.bytes[i] == bytes[i]);
+            QVERIFY2(line.bytes[i] == bytes[i], qPrintable(QString("Address %1: Byte %2: Expected %3, but got %4").arg(addr).arg(i).arg(bytes[i]).arg(line.bytes[i])));
         }
-        QVERIFY(line.disassembly == disassembly);
+        QVERIFY2(line.disassembly == disassembly, qPrintable(QString("Address %1: Expected '%2', but got '%3'").arg(addr).arg(disassembly.c_str()).arg(line.disassembly.c_str())));
     }
 
 
 private slots:
-    void initTestCase() {
-/* From VICE's x128
+    void initMemory() {
+        /* From VICE's x128
+
+  CPU 6502
 
 .C:f000  29 0F       AND #$0F
 .C:f002  D0 1F       BNE $F023
@@ -107,61 +110,62 @@ private slots:
             memory_.push_back(0);
         }
         memory_.insert(memory_.end(), {
-                          0x29,0x0F,
-                          0xD0,0x1F,
-                          0x20,0xC8,0xE9,
-                          0xB0,0x36,
-                          0x20,0x0F,0xF5,
-                          0xA5,0xB7,
-                          0xF0,0x0A,
-                          0x20,0x9A,0xE9,
-                          0x90,0x18,
-                          0xF0,0x28,
-                          0x4C,0x85,0xF6,
-                          0x20,0xD0,0xE8,
-                          0x90,0x0E,
-                          0xF0,0x1E,
-                          0xB0,0xF4,
-                          0x20,0xE9,0xE9,
-                          0xB0,0x17,
-                          0xA9,0x04,
-                          0x20,0x19,0xE9,
-                          0xA9,0xBF,
-                          0xA4,0xB9,
-                          0xC0,0x60,
-                          0xF0,0x07,
-                          0xA0,0x00,
-                          0xA9,0x02,
-                          0x91,0xB2,
-                          0x98,
-                          0x85,0xA6,
-                          0x18,
-                          0x60,
-                          0x20,0xB0,0xF0,
-                          0x8C,0x14,0x0A,
-                          0xC4,0xB7,
-                          0xF0,0x0B,
-                          0x20,0xAE,0xF7,
-                          0x99,0x10,0x0A,
-                          0xC8,
-                          0xC0,0x04,
-                          0xD0,0xF1,
-                          0x20,0x8E,0xE6,
-                          0x8E,0x15,0x0A,
-                          0xAD,0x10,0x0A,
-                          0x29,0x0F,
-                          0xF0,0x1C,
-                          0x0A,
-                          0xAA,
-                          0xAD,0x03,0x0A,
-                          0xD0,0x09,
-                          0xBC,0x4F,0xE8,
-                          0xBD,0x4E,0xE8,
-                          0x4C,0x78,0xF0,
-                      });
+                           0x29,0x0F,
+                           0xD0,0x1F,
+                           0x20,0xC8,0xE9,
+                           0xB0,0x36,
+                           0x20,0x0F,0xF5,
+                           0xA5,0xB7,
+                           0xF0,0x0A,
+                           0x20,0x9A,0xE9,
+                           0x90,0x18,
+                           0xF0,0x28,
+                           0x4C,0x85,0xF6,
+                           0x20,0xD0,0xE8,
+                           0x90,0x0E,
+                           0xF0,0x1E,
+                           0xB0,0xF4,
+                           0x20,0xE9,0xE9,
+                           0xB0,0x17,
+                           0xA9,0x04,
+                           0x20,0x19,0xE9,
+                           0xA9,0xBF,
+                           0xA4,0xB9,
+                           0xC0,0x60,
+                           0xF0,0x07,
+                           0xA0,0x00,
+                           0xA9,0x02,
+                           0x91,0xB2,
+                           0x98,
+                           0x85,0xA6,
+                           0x18,
+                           0x60,
+                           0x20,0xB0,0xF0,
+                           0x8C,0x14,0x0A,
+                           0xC4,0xB7,
+                           0xF0,0x0B,
+                           0x20,0xAE,0xF7,
+                           0x99,0x10,0x0A,
+                           0xC8,
+                           0xC0,0x04,
+                           0xD0,0xF1,
+                           0x20,0x8E,0xE6,
+                           0x8E,0x15,0x0A,
+                           0xAD,0x10,0x0A,
+                           0x29,0x0F,
+                           0xF0,0x1C,
+                           0x0A,
+                           0xAA,
+                           0xAD,0x03,0x0A,
+                           0xD0,0x09,
+                           0xBC,0x4F,0xE8,
+                           0xBD,0x4E,0xE8,
+                           0x4C,0x78,0xF0,
+                       });
     }
 
-    void testDisassembleForward() {
+    void testDisassembleForward6502() {
+        initMemory();
         std::vector<vicedebug::Disassembler::Line> lines = disassembler_.disassembleForward(0xf000, memory_, 10);
 
         QVERIFY(lines.size() == 10);
@@ -186,8 +190,9 @@ private slots:
         verifyLine(lines[5], 0xf050, {0xC8            }, "INY");
     }
 
-    void testDisassembleBackward() {
-        std::vector<vicedebug::Disassembler::Line> lines = disassembler_.disassembleBackward(0xf017, memory_, 10);
+    void testDisassembleBackward6502() {
+        initMemory();
+        std::vector<vicedebug::Disassembler::Line> lines = disassembler_.disassembleBackward(0xf017, memory_, 10, {});
         QVERIFY(lines.size() == 10);
         verifyLine(lines[0], 0xf000, {0x29, 0x0F      }, "AND #$0F");
         verifyLine(lines[1], 0xf002, {0xD0, 0x1F      }, "BNE $F023");
@@ -200,7 +205,7 @@ private slots:
         verifyLine(lines[8], 0xf013, {0x90, 0x18      }, "BCC $F02D");
         verifyLine(lines[9], 0xf015, {0xF0, 0x28      }, "BEQ $F03F");
 
-        lines = disassembler_.disassembleBackward(0xf051, memory_, 6);
+        lines = disassembler_.disassembleBackward(0xf051, memory_, 6, {});
         QVERIFY(lines.size() == 6);
         verifyLine(lines[0], 0xf043, {0x8C, 0x14, 0x0A}, "STY $0A14");
         verifyLine(lines[1], 0xf046, {0xC4, 0xB7      }, "CPY $B7");
@@ -210,6 +215,7 @@ private slots:
         verifyLine(lines[5], 0xf050, {0xC8            }, "INY");
     }
 
+
     void cleanupTestCase() {
     }
 
@@ -217,6 +223,6 @@ private slots:
 
 }
 
-QTEST_MAIN(vicedebug::DisassemblerTest)
+QTEST_MAIN(vicedebug::Disassembler6502Test)
 
-#include "disassembler_test.moc"
+#include "disassembler_6502_test.moc"

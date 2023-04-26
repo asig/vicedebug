@@ -62,6 +62,10 @@ set(PROJECT_SOURCES
         src/controller.cpp
         src/disassembler.h
         src/disassembler.cpp
+        src/disassembler_6502.h
+        src/disassembler_6502.cpp
+        src/disassembler_z80.h
+        src/disassembler_z80.cpp
         src/mainwindow.cpp
         src/mainwindow.h
         src/focuswatcher.h
@@ -103,20 +107,40 @@ qt_finalize_executable(vicedebug)
 #
 enable_testing(true)
 
-qt_add_executable(disassembler_test
+qt_add_executable(disassembler_6502_test
     MANUAL_FINALIZATION
-    test/disassembler_test.cpp
+    test/disassembler_6502_test.cpp
     src/disassembler.h
     src/disassembler.cpp
+    src/disassembler_6502.h
+    src/disassembler_6502.cpp
 )
-add_test(NAME disassembler_test COMMAND disassembler_test)
+add_test(NAME disassembler_6502_test COMMAND disassembler_6502_test)
 
-target_link_libraries(disassembler_test
+target_link_libraries(disassembler_6502_test
     PRIVATE
         Qt${QT_VERSION_MAJOR}::Core
         Qt${QT_VERSION_MAJOR}::Test
 )
-qt_finalize_executable(disassembler_test)
+qt_finalize_executable(disassembler_6502_test)
+
+qt_add_executable(disassembler_z80_test
+    MANUAL_FINALIZATION
+    test/disassembler_z80_test.cpp
+    src/disassembler.h
+    src/disassembler.cpp
+    src/disassembler_z80.h
+    src/disassembler_z80.cpp
+)
+add_test(NAME disassembler_z80_test COMMAND disassembler_z80_test)
+
+target_link_libraries(disassembler_z80_test
+    PRIVATE
+        Qt${QT_VERSION_MAJOR}::Core
+        Qt${QT_VERSION_MAJOR}::Test
+)
+qt_finalize_executable(disassembler_z80_test)
+
 
 qt_add_executable(watches_test
     MANUAL_FINALIZATION

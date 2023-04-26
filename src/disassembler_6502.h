@@ -23,24 +23,19 @@
 #include <vector>
 #include <cstdint>
 
+#include "disassembler.h"
+
 namespace vicedebug {
 
-class Disassembler {
+class Disassembler6502 : public Disassembler {
 public:
-    struct Line {
-        std::uint16_t addr;
-        std::vector<std::uint8_t> bytes;
-        std::string disassembly;
-    };
-
-    virtual ~Disassembler() = default;
-
-    virtual std::vector<Line> disassembleForward(std::uint16_t pos, const std::vector<std::uint8_t>& memory, int lines);
-
-    virtual std::vector<Line> disassembleBackward(std::uint16_t pos, const std::vector<std::uint8_t>& memory, int lines, const std::vector<Disassembler::Line>& disassemblyHint) = 0;
+    virtual std::vector<Line> disassembleBackward(std::uint16_t pos, const std::vector<std::uint8_t>& memory, int lines, const std::vector<Disassembler::Line>& disassemblyHint) override;
 
 protected:
-    virtual Line disassembleLine(std::uint16_t& pos, const std::vector<std::uint8_t>& memory) = 0;
+    Line disassembleLine(std::uint16_t& pos, const std::vector<std::uint8_t>& memory) override;
+
+private:
+    bool checkValidInstr(int depth, std::uint16_t pos, const std::vector<std::uint8_t>& memory, int len, bool illegalAllowed);
 };
 
 }
