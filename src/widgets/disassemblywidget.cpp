@@ -20,7 +20,7 @@
 #include "widgets/disassemblywidget.h"
 
 #include "resources.h"
-#include "disassembler.h"
+#include "disassembler_6502.h"
 
 #include <QEvent>
 #include <QMouseEvent>
@@ -29,6 +29,8 @@
 #include <QFontDatabase>
 #include <QScrollArea>
 #include <QScrollBar>
+#include <QHBoxLayout>
+#include <QVBoxLayout>
 
 #include <iostream>
 
@@ -55,22 +57,73 @@ QColor kBreakpointFgDisabled = QColor(Qt::lightGray).lighter(80);
 }
 
 DisassemblyWidget::DisassemblyWidget(Controller* controller, QWidget* parent) :
-    QScrollArea(parent) {
+    QWidget(parent), controller_(controller) {
 
-    setBackgroundRole(QPalette::Dark);
-    content_ = new DisassemblyContent(controller, this);
-    setWidgetResizable(true);
-    setWidget(content_);
-    setFont(Resources::robotoMonoFont());
+    connect(controller_, &Controller::connected, this, [this]() { setEnabled(true);} );
+    connect(controller_, &Controller::disconnected, this, [this]() { setEnabled(false);} );
+    connect(controller_, &Controller::executionPaused, this, [this]() { setEnabled(true);} );
+    connect(controller_, &Controller::executionResumed, this, [this]() { setEnabled(false);} );
 
-    connect(controller, &Controller::connected, this, [this]() { this->setEnabled(true);} );
-    connect(controller, &Controller::disconnected, this, [this]() { this->setEnabled(false);} );
-    connect(controller, &Controller::executionPaused, this, [this]() { this->setEnabled(true);} );
-    connect(controller, &Controller::executionResumed, this, [this]() { this->setEnabled(false);} );
+    // Set up disassembly content
+    scrollArea_ = new QScrollArea(this);
+    content_ = new DisassemblyContent(controller_, scrollArea_);
+    scrollArea_->setWidgetResizable(true);
+    scrollArea_->setWidget(content_);
 
+    // Set up "toolbar"
+    addressEdit_ = new QLineEdit();
+    addressEdit_->setFont(Resources::robotoMonoFont());
+    addressEdit_->setMaximumWidth(addressEdit_->fontMetrics().averageCharWidth()*8); // ~ 8 chars
+    connect(addressEdit_, &QLineEdit::textEdited, [this](const QString& s) {
+        std::optional<std::uint16_t> optAddr = parseAddress(s);
+        goToAddressBtn_->setEnabled(optAddr.has_value());
+    });
+    auto goToAddrFct = [&]() {
+        std::optional<std::uint16_t> optAddr = parseAddress(addressEdit_->text());
+        if (optAddr.has_value()) {
+           content_->goTo(optAddr.value());
+           addressEdit_->clear();
+           goToAddressBtn_->setEnabled(false);
+        }
+    };
+    connect(addressEdit_, &QLineEdit::returnPressed, goToAddrFct);
+
+    goToAddressBtn_ = new QPushButton("Go to");
+    goToAddressBtn_->setEnabled(false);
+    connect(goToAddressBtn_, &QPushButton::clicked, goToAddrFct);
+
+    QHBoxLayout* toolbar = new QHBoxLayout();
+    toolbar->addWidget(addressEdit_);
+    toolbar->addWidget(goToAddressBtn_);
+    toolbar->addStretch();
+
+    // Set up final layout
+    QVBoxLayout* layout = new QVBoxLayout();
+    layout->addLayout(toolbar);
+    layout->addWidget(scrollArea_);
+
+    setLayout(layout);
+
+    setEnabled(false);
 }
 
 DisassemblyWidget::~DisassemblyWidget() {
+}
+
+// Move this into a util function
+std::optional<std::uint16_t> DisassemblyWidget::parseAddress(QString s) {
+    s = s.trimmed().toLower();
+    if (s == "pc") {
+        return content_->getPc();
+    }
+    int base = 16;
+    if (s.startsWith("+")) {
+        s = s.right(s.length()-1).trimmed();
+        base = 10;
+    }
+    bool ok;
+    int res = s.toInt(&ok, base);
+    return ok ? std::optional<std::uint16_t>(res) : std::nullopt;
 }
 
 //void DisassemblyWidget::resizeEvent(QResizeEvent* event) {
@@ -85,6 +138,8 @@ DisassemblyWidget::~DisassemblyWidget() {
 DisassemblyContent::DisassemblyContent(Controller* controller, QScrollArea* parent) :
     QWidget(parent), controller_(controller), mouseDown_(false), highlightedLine_(-1), scrollArea_(parent)
 {
+    setFont(Resources::robotoMonoFont());
+
     // Compute the size of the widget:
     QFontMetrics fm(Resources::robotoMonoFont());
     lineH_ = fm.height();
@@ -356,9 +411,9 @@ void DisassemblyContent::onRegistersChanged(const Registers& registers) {
 //}
 
 void DisassemblyContent::updateDisassembly() {
-    Disassembler disassembler;
+    Disassembler6502 disassembler;
 
-    auto before = disassembler.disassembleBackward(pc_, memory_, 65636);
+    auto before = disassembler.disassembleBackward(pc_, memory_, 65636, {});
     auto after = disassembler.disassembleForward(pc_, memory_, 65636);
 
     lines_.clear();
@@ -379,6 +434,19 @@ void DisassemblyContent::highlightLine(int line) {
     int x = scrollArea_->horizontalScrollBar()->value();
 
     scrollArea_->ensureVisible(x, y, 0, 50);
+}
+
+void DisassemblyContent::goTo(std::uint16_t addr) {
+    auto it = addressToLine_.find(addr);
+    while (addr > 0 && it == addressToLine_.end()) {
+        addr--;
+        it = addressToLine_.find(addr);
+    }
+    auto l = it->second;
+    highlightLine(l);
+//    int y = l * lineH_ + ascent_;
+//    int x = scrollArea_->horizontalScrollBar()->value();
+//    scrollArea_->ensureVisible(x, y, 0, 50);
 }
 
 void DisassemblyContent::onMemoryChanged(std::uint16_t bankId, std::uint16_t addr, std::vector<std::uint8_t> data) {

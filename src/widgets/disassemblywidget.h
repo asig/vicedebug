@@ -22,6 +22,8 @@
 #include <map>
 
 #include <QScrollArea>
+#include <QLineEdit>
+#include <QPushButton>
 
 #include "controller.h"
 #include "disassembler.h"
@@ -30,18 +32,30 @@ namespace vicedebug {
 
 class DisassemblyContent;
 
-class DisassemblyWidget : public QScrollArea {
+class DisassemblyWidget : public QWidget {
     Q_OBJECT
 
 public:
     DisassemblyWidget(Controller* controller, QWidget* parent);
     virtual ~DisassemblyWidget();
 
+//public slots:
+//    void onConnected(const MachineState& machineState, const Banks& banks, const Breakpoints& breakpoints);
+//    void onDisconnected();
+
 protected:
 //    void resizeEvent(QResizeEvent* event) override;
 
 private:
+    std::optional<std::uint16_t> parseAddress(QString s);
+
+    Controller* controller_;
+
+    QScrollArea* scrollArea_;
     DisassemblyContent* content_;
+
+    QLineEdit* addressEdit_;
+    QPushButton* goToAddressBtn_;
 };
 
 class DisassemblyContent : public QWidget {
@@ -52,6 +66,11 @@ public:
     virtual ~DisassemblyContent();
 
     void highlightLine(int line);
+    void goTo(std::uint16_t address);
+
+    std::uint16_t getPc() const {
+        return pc_;
+    }
 
 protected:
     QSize sizeHint() const override;
