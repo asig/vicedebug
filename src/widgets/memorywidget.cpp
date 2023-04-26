@@ -68,11 +68,6 @@ Watches filterByBank(const Watches& watches, int bank) {
 MemoryWidget::MemoryWidget(Controller* controller, QWidget* parent) :
     controller_(controller), QWidget(parent)
 {
-    connect(controller_, &Controller::connected, this, [this]() { setEnabled(true);} );
-    connect(controller_, &Controller::disconnected, this, [this]() { setEnabled(false);} );
-    connect(controller_, &Controller::executionPaused, this, [this]() { setEnabled(true);} );
-    connect(controller_, &Controller::executionResumed, this, [this]() { setEnabled(false);} );
-
     // Set up memory content
     scrollArea_ = new QScrollArea(this);
     content_ = new MemoryContent(controller_, scrollArea_);
@@ -85,6 +80,11 @@ MemoryWidget::MemoryWidget(Controller* controller, QWidget* parent) :
     // Set up "toolbar"
     bankCombo_ = new QComboBox();
     connect(bankCombo_, &QComboBox::currentIndexChanged, [this](int index) {
+        if (index < 0) {
+            // No selection
+            content_->setMemory({{0,{}}}, Bank{0}, {}, {});
+            return;
+        }
         selectedBank_ = banks_[index];
         if (memory_.find(selectedBank_.id) != memory_.end()) {
             content_->setMemory(memory_, selectedBank_, breakpoints_, watches_); // So far, breakpoints are only supported for default bank...
@@ -117,12 +117,14 @@ MemoryWidget::~MemoryWidget() {
 }
 
 void MemoryWidget::onConnected(const MachineState& machineState, const Banks& banks, const Breakpoints& breakpoints) {
-    banks_ = banks;
+    // Clear bankCombo before we overwrite banks_, because the current selection of bankCombo will change while it is cleared.
     bankCombo_->clear();
+    // banks_ needs to be set before we insert items again, because again, the current selection of bankCombo will change when adding items
+    banks_ = banks;
     for (Bank b : banks) {
         bankCombo_->addItem(b.name.c_str(), QVariant(b.id));
     }
-    selectedBank_ = banks[0];
+    selectedBank_ = banks_[0];
     bankCombo_->setCurrentIndex(0);
     memory_ = machineState.memory;
     breakpoints_ = breakpoints;
@@ -132,7 +134,9 @@ void MemoryWidget::onConnected(const MachineState& machineState, const Banks& ba
 
 void MemoryWidget::onDisconnected() {
     memory_.clear();
-    content_->setMemory({}, {}, {}, {});
+    bankCombo_->clear();
+    breakpoints_.clear();
+    content_->setMemory({{0,{}}}, Bank{0}, {}, {});
     setEnabled(false);
 }
 
@@ -393,6 +397,7 @@ void MemoryContent::paintEvent(QPaintEvent* event) {
                 painter.drawRect(textX, y - ascent_, charW_, lineH_);
                 painter.setPen(kBg);
                 painter.setBackgroundMode(Qt::TransparentMode);
+                painter.setBrush(Qt::NoBrush);
             }
             painter.setFont(Resources::robotoMonoFont());            
             painter.drawText(hexX, y, hex);
@@ -410,17 +415,30 @@ void MemoryContent::paintEvent(QPaintEvent* event) {
             QString text;
             if (nibbleMode_) {
                 if (pos <= cursorPos_/2 && cursorPos_/2 < pos+kBytesPerLine) {
+                    // Highlight nibble
                     int x = borderW_ + addressW_ + separatorW_ + ((cursorPos_/2) % kBytesPerLine) * hexSpaceW_ + (cursorPos_ % 2) * hexCharW_;
                     text = QString::asprintf("%02X",memory_[cursorPos_/2]).mid((cursorPos_ % 2),1);
                     painter.setFont(Resources::robotoMonoFont());
                     painter.drawText(x, y, text);
+
+                    // highlight character
+                    x = borderW_ + addressW_ + separatorW_ + kBytesPerLine*hexSpaceW_ - hexCharW_ + separatorW_ + (cursorPos_/2 % kBytesPerLine) * charW_;
+                    painter.setPen(kBgSelected);
+                    painter.drawRect(x, y-ascent_, charW_, lineH_);
                 }
             } else {
                 if (pos <= cursorPos_ && cursorPos_ < pos+kBytesPerLine) {
+                    // Highlight character
                     char c = (char)memory_[cursorPos_];
                     text = PETSCII::isPrintable(c) ? QString(QChar(petsciiBase_ + PETSCII::toScreenCode(c))) : ".";
                     painter.setFont(Resources::c64Font());
                     painter.drawText(borderW_ + addressW_ + separatorW_ + kBytesPerLine*hexSpaceW_ - hexCharW_ + separatorW_ + (cursorPos_ % kBytesPerLine) * charW_ , y, text);
+
+                    // highlight nibbles
+                    int x = borderW_ + addressW_ + separatorW_ + (cursorPos_ % kBytesPerLine)*hexSpaceW_ ;
+                    painter.setPen(kBgSelected);
+                    painter.drawRect(x, y-ascent_, 2*hexCharW_, lineH_);
+
                 }
             }
             painter.setPen(fg);
@@ -494,6 +512,7 @@ bool MemoryContent::addrAtPos(QPoint pos, std::uint16_t& addr, bool& nibbleMode,
             // Out of bounds
             return false;
         }
+        nibbleMode = false;
         return true;
     }
     return false;
