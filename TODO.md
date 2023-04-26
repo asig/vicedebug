@@ -1,16 +1,37 @@
 # Bugs
+- [X] Crash when disconnect
+- [ ] Crash on reconnect
 - Memory Widget
    - [X] Watch type "float" not highlighted correctly
+   - [ ] Editing text does not work
 
 - Watches Widget
    - [X] Strings not PETSCII encoded?
+   - [ ] Tree branch controls are shown
+
+- Breakpoint Widget
+   - [ ] Tree branch controls are shown
+
+- Disassembly:
+   - [X] Scrollbars not disabled at startup
 
 # TODO
 
+- [ ] Label support
+      - [ ] in "Go to address" dropdown
+      - [ ] in "add breakpoint" dialog
+      - [ ] in "add watch" dialog
+
 ## Disassembler Widget
-- [ ] "Jump to address" box, "Jump to pc"
+- [ ] Toolbar
+      - [X] "Jump to address" box"
+      - [X] "Jump to PC"
+      - [ ] Load labels
+- [ ] Context Menu for all toolbar actions
 - [X] Make sure line is visible
 - [ ] Mouse-over breakpoints shows breakpoint info
+- [ ] Context Menu on address params to create watchpoints
+- [ ] Switch between 6502 and Z80
 
 ## Memory Widget
 - [X] Allow modifying memory
@@ -26,6 +47,9 @@
 - [X] Context-Menu that allows:
       - [X] add a watch
       - [X] add a breakpoint
+- [ ] Search
+      - [ ] hex
+      - [ ] text
 
 ## Breakpoints Widget
 - [X] Add breakpoint
@@ -47,6 +71,7 @@
 - [ ] Context menu
       - [ ] modify
       - [ ] delete
+      - [ ] Over value, allow to select presentation
 
 ## Registers Widget
 - [X] Add register modification
@@ -60,6 +85,7 @@
 - [ ] Font viewer (currently installed font)
 - [ ] Screen viewer (currently active screen)
 - [ ] Support Z80 for Commodore 128
+- [ ] Support CPU jams
 
 ## Make it look good
 ### Windows
