@@ -38,13 +38,18 @@ public:
     ~MainWindow();
 
 private slots:
+    // Action slots
     void onConnectClicked();
     void onDisconnectClicked();
+    void onLoadSymbolsClicked();
     void onContinueClicked();
     void onPauseClicked();
     void onStepInClicked();
     void onStepOutClicked();
     void onStepOverClicked();
+    void onAboutClicked();
+
+    // Other slots
     void onExecutionResumed();
     void onExecutionPaused(const MachineState& state);
 
@@ -65,6 +70,9 @@ private:
 
     QAction* connectAction_;
     QAction* disconnectAction_;
+    QAction* loadSymbolsAction_;
+
+    // Debug actions
     QAction* continueAction_;
     QAction* pauseAction_;
     QAction* stepInAction_;

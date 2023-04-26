@@ -86,6 +86,12 @@ void MainWindow::createActions() {
     disconnectAction_ = a;
     connect(disconnectAction_, &QAction::triggered, this, &MainWindow::onDisconnectClicked);
 
+    a = new QAction("Load symbols...");
+    loadSymbolsAction_ = a;
+    a->setEnabled(true);
+    a->setVisible(true);
+    connect(connectAction_, &QAction::triggered, this, &MainWindow::onLoadSymbolsClicked);
+
     emulatorRunning_ = false;
     a = new QAction(Resources::loadColoredIcon(kCol2, ":/images/codicons/debug-continue.svg"), tr("Continue"));
     a->setShortcut(Qt::Key_F5);
@@ -144,16 +150,23 @@ void MainWindow::createToolBar() {
 }
 
 void MainWindow::createMenuBar() {
-//    QMenu* fileMenu = menuBar()->addMenu(tr("&File"));
+    QMenu* fileMenu = menuBar()->addMenu(tr("&File"));
 
-//    menu->addAction(tr("Save layout..."), this, &MainWindow::saveLayout);
-//    menu->addAction(tr("Load layout..."), this, &MainWindow::loadLayout);
-//    menu->addAction(tr("Switch layout direction"),this, &MainWindow::switchLayoutDirection);
+    fileMenu->addAction(connectAction_);
+    fileMenu->addAction(disconnectAction_);
+    fileMenu->addSeparator();
+    fileMenu->addAction(loadSymbolsAction_);
+    fileMenu->addSeparator();
+    fileMenu->addAction(tr("&Quit"), this, &QWidget::close);
 
-//    menu->addSeparator();
-//    menu->addAction(tr("&Quit"), this, &QWidget::close);
+    QMenu* debugMenu = menuBar()->addMenu(tr("&Debug"));
+    debugMenu->addAction(continueAction_);
+    debugMenu->addAction(pauseAction_);
+    debugMenu->addAction(stepOverAction_);
+    debugMenu->addAction(stepInAction_);
+    debugMenu->addAction(stepOutAction_);
 
-//    mainWindowMenu = menuBar()->addMenu(tr("Main window"));
+
 
 //    QAction *action = mainWindowMenu->addAction(tr("Animated docks"));
 //    action->setCheckable(true);
@@ -200,12 +213,9 @@ void MainWindow::createMenuBar() {
 
 //    dockWidgetMenu = menuBar()->addMenu(tr("&Dock Widgets"));
 
-//    QMenu *aboutMenu = menuBar()->addMenu(tr("About"));
-//    QAction *aboutAct = aboutMenu->addAction(tr("&About"), this, &MainWindow::about);
-//    aboutAct->setStatusTip(tr("Show the application's About box"));
-
-//    QAction *aboutQtAct = aboutMenu->addAction(tr("About &Qt"), qApp, &QApplication::aboutQt);
-//    aboutQtAct->setStatusTip(tr("Show the Qt library's About box"));
+    QMenu *aboutMenu = menuBar()->addMenu(tr("About"));
+    QAction *aboutAct = aboutMenu->addAction(tr("&About"), this, &MainWindow::onAboutClicked);
+    aboutAct->setStatusTip(tr("Show the application's About box"));
 }
 
 void MainWindow::createMainUI() {
@@ -253,6 +263,10 @@ void MainWindow::onDisconnectClicked() {
     controller_->disconnect();
 }
 
+void MainWindow::onLoadSymbolsClicked() {
+    // TODO(implement me!)
+}
+
 void MainWindow::onStepInClicked() {
     controller_->stepIn();
 }
@@ -273,6 +287,10 @@ void MainWindow::onContinueClicked() {
 void MainWindow::onPauseClicked() {
     pauseAction_->setEnabled(false); // Will be re-enabled in the response from the emulator
     controller_->pauseExecution();
+}
+
+void MainWindow::onAboutClicked() {
+    // TODO(asigner): implement me
 }
 
 void MainWindow::onConnected(const MachineState& machineState) {
