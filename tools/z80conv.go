@@ -4,8 +4,12 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 )
+
+var dispAbs8Regexp = regexp.MustCompile(`^.*([+-]\$[a-fA-F0-9]{2}).*#(\$[a-fA-F0-9]{2})$`)
+var abs16Regexp = regexp.MustCompile(`^.*(\$[a-fA-F0-9]{4}).*$`)
 
 // readLines reads a whole file into memory
 // and returns a slice of its lines.
@@ -57,8 +61,13 @@ func determineParamMode(bytes []string, instr string) (paramMode, instrOut strin
 				}
 				return "DISP", instr[0:idx-1] + "%s" + instr[idx+3:]
 			case 4:
-				idx := strings.Index(instr, "$")
-				return "ABS16", instr[0:idx] + "%s" + instr[idx+5:]
+				// ABS16 or DISP_ABS8
+				matches := abs16Regexp.FindStringSubmatchIndex(instr)
+				if matches != nil {
+					return "ABS16", instr[0:matches[2]] + "%s" + instr[matches[3]:]
+				}
+				matches = dispAbs8Regexp.FindStringSubmatchIndex(instr)
+				return "DISP_ABS8", instr[0:matches[2]] + "%s" + instr[matches[3]:matches[4]] + "%s" + instr[matches[5]:]
 			}
 			return "NONE", "???"
 		}
@@ -82,7 +91,7 @@ func determineParamMode(bytes []string, instr string) (paramMode, instrOut strin
 				// No params, not need to change instr
 				return "NONE", instr
 			case 3:
-				// REL, ABS8, or DISK
+				// REL, ABS8, or DISP
 				idx := strings.Index(instr, "$"+bytes[1])
 				if idx >= 0 {
 					return "ABS8", instr[0:idx] + "%s" + instr[idx+3:]
@@ -147,6 +156,10 @@ func main() {
 			continue
 		}
 
+		var tableLine []string
+		var initMem []string
+		var testLine []string
+
 		// Analyze prefix
 		prefixLine := lines[idx]
 		idx++
@@ -164,12 +177,9 @@ func main() {
 		} else if prefixLine == "---- prefix fd cb" {
 			varName = "opcodes_fdcb"
 		}
-		fmt.Printf("InstrDesc %s[256] = {\n", varName)
+		tableLine = append(tableLine, fmt.Sprintf("InstrDesc %s[256] = {", varName))
 
 		// process section
-
-		var initMem []string
-		var testLine []string
 
 		pos = 0
 		for idx < len(lines) && strings.HasPrefix(lines[idx], ".C:") {
@@ -186,7 +196,7 @@ func main() {
 
 			// Figure out address mode
 			paramMode, instr := determineParamMode(bytes, instr)
-			fmt.Printf("  /* 0x%02x */  {\"%s\", %s, %t},\n", pos, instr, paramMode, illegal)
+			tableLine = append(tableLine, fmt.Sprintf("  /* 0x%02x */  {\"%s\", %s, %t},", pos, instr, paramMode, illegal))
 
 			// fill initMem lines
 			l = ""
@@ -208,8 +218,11 @@ func main() {
 
 		}
 
-		fmt.Printf("};\n")
+		tableLine = append(tableLine, fmt.Sprintf("};"))
 
+		for _, s := range tableLine {
+			fmt.Println(s)
+		}
 		fmt.Printf("==============================================================\n")
 		// for _, s := range initMem {
 		// 	fmt.Println(s)

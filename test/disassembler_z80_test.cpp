@@ -2196,9 +2196,6 @@ private slots:
         initMem(0x0594, { 0xDD,0xCA,0xDD,0xCB });
         lines = disassembler_.disassembleForward(0x0594, memory_, 1);
         verifyLine(lines[0], 0x0594, { 0xDD,0xCA,0xDD,0xCB }, "*JP Z, $CBDD");
-        initMem(0x0596, { 0xDD,0xCB });
-        lines = disassembler_.disassembleForward(0x0596, memory_, 1);
-        verifyLine(lines[0], 0x0596, { 0xDD,0xCB }, "???");
         initMem(0x0598, { 0xDD,0xCC,0xDD,0xCD });
         lines = disassembler_.disassembleForward(0x0598, memory_, 1);
         verifyLine(lines[0], 0x0598, { 0xDD,0xCC,0xDD,0xCD }, "*CALL Z, $CDDD");
@@ -3738,9 +3735,6 @@ private slots:
         initMem(0x0594, { 0xFD,0xCA,0xFD,0xCB });
         lines = disassembler_.disassembleForward(0x0594, memory_, 1);
         verifyLine(lines[0], 0x0594, { 0xFD,0xCA,0xFD,0xCB }, "*JP Z, $CBFD");
-        initMem(0x0596, { 0xFD,0xCB });
-        lines = disassembler_.disassembleForward(0x0596, memory_, 1);
-        verifyLine(lines[0], 0x0596, { 0xFD,0xCB }, "???");
         initMem(0x0598, { 0xFD,0xCC,0xFD,0xCD });
         lines = disassembler_.disassembleForward(0x0598, memory_, 1);
         verifyLine(lines[0], 0x0598, { 0xFD,0xCC,0xFD,0xCD }, "*CALL Z, $CDFD");

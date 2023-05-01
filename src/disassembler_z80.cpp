@@ -299,7 +299,7 @@ InstrDesc opcodes[256] = {
     /* 0xfd */  {"???", NONE, true},
     /* 0xfe */  {"CP #%s", ABS8, false},
     /* 0xff */  {"RST 38", NONE, false},
-};
+    };
 
 InstrDesc opcodes_cb[256] = {
     /* 0x00 */  {"RLC B", NONE, false},
@@ -558,7 +558,7 @@ InstrDesc opcodes_cb[256] = {
     /* 0xfd */  {"SET 7, L", NONE, false},
     /* 0xfe */  {"SET 7, (HL)", NONE, false},
     /* 0xff */  {"SET 7, A", NONE, false},
-};
+    };
 
 InstrDesc opcodes_dd[256] = {
     /* 0x00 */  {"NOP", NONE, true},
@@ -615,7 +615,7 @@ InstrDesc opcodes_dd[256] = {
     /* 0x33 */  {"INC SP", NONE, true},
     /* 0x34 */  {"INC (IX%s)", DISP, false},
     /* 0x35 */  {"DEC (IX%s)", DISP, false},
-    /* 0x36 */  {"LD (IX+%s),#%s", DISP_ABS8, false},
+    /* 0x36 */  {"LD (IX%s), #s%", DISP_ABS8, false},
     /* 0x37 */  {"SCF", NONE, true},
     /* 0x38 */  {"JR C, %s", REL, true},
     /* 0x39 */  {"ADD IX,SP", NONE, false},
@@ -817,7 +817,7 @@ InstrDesc opcodes_dd[256] = {
     /* 0xfd */  {"NOP #%s", ABS8, true},
     /* 0xfe */  {"CP #%s", ABS8, true},
     /* 0xff */  {"RST 38", NONE, true},
-};
+    };
 
 InstrDesc opcodes_ed[256] = {
     /* 0x00 */  {"NOP", NONE, true},
@@ -1076,7 +1076,7 @@ InstrDesc opcodes_ed[256] = {
     /* 0xfd */  {"NOP", NONE, true},
     /* 0xfe */  {"???", NONE, true},
     /* 0xff */  {"???", NONE, true},
-};
+    };
 
 InstrDesc opcodes_fd[256] = {
     /* 0x00 */  {"???", NONE, true},
@@ -1335,7 +1335,7 @@ InstrDesc opcodes_fd[256] = {
     /* 0xfd */  {"NOP #%s", ABS8, true},
     /* 0xfe */  {"CP %s", ABS8, true},
     /* 0xff */  {"???", NONE, true},
-};
+    };
 
 InstrDesc opcodes_ddcb[256] = {
     /* 0x00 */  {"RLC (IX%s), B", DISP, true},
@@ -1594,7 +1594,7 @@ InstrDesc opcodes_ddcb[256] = {
     /* 0xfd */  {"SET 7, (IX%s), L", DISP, true},
     /* 0xfe */  {"SET 7, (IX%s)", DISP, false},
     /* 0xff */  {"SET 7, (IX%s), A", DISP, true},
-};
+    };
 
 InstrDesc opcodes_fdcb[256] = {
     /* 0x00 */  {"RLC (IY%s), B", DISP, true},
@@ -1853,7 +1853,7 @@ InstrDesc opcodes_fdcb[256] = {
     /* 0xfd */  {"SET 7, (IY%s), L", DISP, true},
     /* 0xfe */  {"SET 7, (IY%s)", DISP, false},
     /* 0xff */  {"SET 7, (IY%s), A", DISP, true},
-};
+    };
 
 
 std::uint8_t fetchUInt8(Disassembler::Line& res, std::uint16_t& pos, const std::vector<std::uint8_t>& memory) {
@@ -1980,7 +1980,7 @@ Disassembler::Line DisassemblerZ80::disassembleLine(std::uint16_t& pos, const st
 
     InstrDesc instr = fetchInstrDesc(pos, memory, res);
 
-    std:uint16_t param;
+    std::uint16_t param;
     bool fetchParam = true;
     if (res.bytes.size() >= 2 && (res.bytes[0] == 0xdd || res.bytes[0] == 0xfd) && res.bytes[1] == 0xcb) {
         fetchParam = false;
@@ -2014,28 +2014,31 @@ Disassembler::Line DisassemblerZ80::disassembleLine(std::uint16_t& pos, const st
         paramStr = QString::asprintf("$%04X", pos + adj + (std::int16_t)param);
         break;
     case DISP:
-        {
-            if (fetchParam) {
-                param = fetchInt8(res, pos, memory);
-            }
-            bool neg = ((std::int16_t)param) < 0;
-            if (neg) {
-                param = - ((std::int16_t)param);
-            }
-            paramStr = QString::asprintf("%s$%02X", neg ? "-" : "+", param & 0xff);
+    {
+        if (fetchParam) {
+            param = fetchInt8(res, pos, memory);
         }
-        break;
+        bool neg = ((std::int16_t)param) < 0;
+        if (neg) {
+            param = - ((std::int16_t)param);
+        }
+        paramStr = QString::asprintf("%s$%02X", neg ? "-" : "+", param & 0xff);
+    }
+    break;
     case DISP_ABS8:
-        {
-            std::int16_t disp = param >> 8;
-            bool neg = disp < 0;
-            if (neg) {
-                disp = -disp;
-            }
-            paramStr = QString::asprintf("%s$%02X", neg ? "-" : "+", disp);
-            paramStr2 = QString::asprintf("$%02X", param & 0xff);
+    {
+        if (fetchParam) {
+            param = fetchUInt16(res, pos, memory);
         }
-        break;
+        std::int16_t disp = param >> 8;
+        bool neg = disp < 0;
+        if (neg) {
+            disp = -disp;
+        }
+        paramStr = QString::asprintf("%s$%02X", neg ? "-" : "+", disp);
+        paramStr2 = QString::asprintf("$%02X", param & 0xff);
+    }
+    break;
     }
     res.disassembly = QString::asprintf(instr.instr.c_str(), paramStr.toStdString().c_str(),paramStr2.toStdString().c_str()).toStdString();
     if (instr.illegal && res.disassembly != "???") {
