@@ -69,7 +69,7 @@ func determineParamMode(bytes []string, instr string) (paramMode, instrOut strin
 				matches = dispAbs8Regexp.FindStringSubmatchIndex(instr)
 				return "DISP_ABS8", instr[0:matches[2]] + "%s" + instr[matches[3]:matches[4]] + "%s" + instr[matches[5]:]
 			}
-			return "NONE", "???"
+			panic("Can't happen!")
 		}
 	case bytes[0] == "ED":
 		switch len(bytes) {
@@ -80,19 +80,19 @@ func determineParamMode(bytes []string, instr string) (paramMode, instrOut strin
 			idx := strings.Index(instr, "$")
 			return "ABS16", instr[0:idx] + "%s" + instr[idx+5:]
 		}
-		return "NONE", "???"
+		panic("Can't happen!")
 	case bytes[0] == "FD":
 		if len(bytes) > 2 && bytes[1] == "CB" {
 			idx := strings.Index(instr, "$"+bytes[2])
 			return "DISP", instr[0:idx-1] + "%s" + instr[idx+3:]
 		} else {
 			switch len(bytes) {
-			case 1:
+			case 2:
 				// No params, not need to change instr
 				return "NONE", instr
 			case 3:
 				// REL, ABS8, or DISP
-				idx := strings.Index(instr, "$"+bytes[1])
+				idx := strings.Index(instr, "$"+bytes[2])
 				if idx >= 0 {
 					return "ABS8", instr[0:idx] + "%s" + instr[idx+3:]
 				} else {
@@ -100,14 +100,19 @@ func determineParamMode(bytes []string, instr string) (paramMode, instrOut strin
 					if idx < len(instr)-4 && isHex(instr[idx+1]) && isHex(instr[idx+2]) && isHex(instr[idx+3]) && isHex(instr[idx+4]) {
 						return "REL", instr[0:idx] + "%s" + instr[idx+5:]
 					} else {
-						return "ABS8", instr[0:idx-1] + "%s" + instr[idx+3:]
+						return "DISP", instr[0:idx-1] + "%s" + instr[idx+3:]
 					}
 				}
 			case 4:
-				idx := strings.Index(instr, "$")
-				return "ABS16", instr[0:idx] + "%s" + instr[idx+5:]
+				// ABS16 or DISP_ABS8
+				matches := abs16Regexp.FindStringSubmatchIndex(instr)
+				if matches != nil {
+					return "ABS16", instr[0:matches[2]] + "%s" + instr[matches[3]:]
+				}
+				matches = dispAbs8Regexp.FindStringSubmatchIndex(instr)
+				return "DISP_ABS8", instr[0:matches[2]] + "%s" + instr[matches[3]:matches[4]] + "%s" + instr[matches[5]:]
 			}
-			return "NONE", "???"
+			panic("Can't happen!")
 		}
 	default:
 		switch len(bytes) {
