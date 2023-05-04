@@ -26,6 +26,13 @@
 
 namespace vicedebug {
 
+enum Cpu {
+    kCpu6502,
+    kCpuZ80,
+};
+
+std::string cpuName(Cpu cpu);
+
 struct Bank {
     std::uint16_t id;
     std::string name;       
@@ -52,6 +59,8 @@ struct Registers {
 struct MachineState {
     std::unordered_map<std::uint16_t, std::vector<std::uint8_t>> memory;
     Registers regs;
+    Cpu activeCpu;
+    std::vector<Cpu> availableCpus;
 };
 
 }

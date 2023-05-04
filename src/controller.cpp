@@ -68,6 +68,10 @@ MachineState Controller::getMachineState() {
 
     machineState.regs = registersFromResponse(registersResponse);
 
+    // TODO set active and available CPUs
+    machineState.activeCpu = kCpu6502;
+    machineState.availableCpus = { kCpu6502, kCpuZ80 };
+
     return machineState;
 }
 

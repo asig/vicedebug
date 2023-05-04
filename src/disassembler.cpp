@@ -27,7 +27,7 @@ namespace vicedebug {
 std::vector<Disassembler::Line> Disassembler::disassembleForward(std::uint16_t pos, const std::vector<std::uint8_t>& memory, int lines) {
     std::vector<Line> res;
 
-    while(lines-- > 0) {
+    while(lines-- > 0 && (0 < pos && pos < memory.size())) {
         std::uint16_t oldpos = pos;
         res.push_back(disassembleLine(pos, memory));
         if (pos < oldpos) {

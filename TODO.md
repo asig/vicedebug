@@ -31,7 +31,7 @@
 - [X] Make sure line is visible
 - [ ] Mouse-over breakpoints shows breakpoint info
 - [ ] Context Menu on address params to create watchpoints
-- [ ] Switch between 6502 and Z80
+- [X] Switch between 6502 and Z80
 
 ## Memory Widget
 - [X] Allow modifying memory
@@ -85,6 +85,8 @@
 - [ ] Font viewer (currently installed font)
 - [ ] Screen viewer (currently active screen)
 - [ ] Support Z80 for Commodore 128
+      - [X] Disassembler
+      - [ ] Figure out when Z80 is active
 - [ ] Support CPU jams
 
 ## Make it look good

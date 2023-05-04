@@ -326,7 +326,7 @@ InstrDesc instructions[256] = {
 }
 
 bool Disassembler6502::checkValidInstr(int depth, std::uint16_t pos, const std::vector<std::uint8_t>& memory, int len, bool illegalAllowed) {
-    if (pos < 0 || pos+len > 0xffff) {
+    if (pos < 0 || pos+len >= memory.size()) {
         // out of range
         return false;
     }
@@ -353,7 +353,7 @@ bool Disassembler6502::checkValidInstr(int depth, std::uint16_t pos, const std::
 std::vector<Disassembler::Line> Disassembler6502::disassembleBackward(std::uint16_t pos, const std::vector<std::uint8_t>& memory, int lines, const std::vector<Disassembler::Line>& disassemblyHint) {
     std::vector<Line> res;
 
-    while(lines-- > 0 && pos > 0) {
+    while(lines-- > 0 && (0 < pos && pos < memory.size())) {
         std::uint16_t p = pos;
         std::uint16_t tmp;
 //        // Go for the longest non-illegal sequence before pos

@@ -1943,7 +1943,7 @@ bool checkValidInstr(int depth, std::uint16_t pos, const std::vector<std::uint8_
 std::vector<Disassembler::Line> DisassemblerZ80::disassembleBackward(std::uint16_t pos, const std::vector<std::uint8_t>& memory, int lines, const std::vector<Disassembler::Line>& disassemblyHint) {
     std::vector<Line> res;
 
-    while(lines-- > 0 && pos > 0) {
+    while(lines-- > 0 && (0 < pos && pos < memory.size())) {
         std::uint16_t p = pos;
         std::uint16_t tmp;
         if (checkValidInstr(0, pos - 3, memory, 3, /* illegalAllowed= */true)) {

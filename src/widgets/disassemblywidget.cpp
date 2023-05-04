@@ -21,6 +21,7 @@
 
 #include "resources.h"
 #include "disassembler_6502.h"
+#include "disassembler_z80.h"
 
 #include <QEvent>
 #include <QMouseEvent>
@@ -28,6 +29,7 @@
 #include <QPainter>
 #include <QFontDatabase>
 #include <QScrollArea>
+#include <QLabel>
 #include <QScrollBar>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
@@ -59,7 +61,23 @@ QColor kBreakpointFgDisabled = QColor(Qt::lightGray).lighter(80);
 DisassemblyWidget::DisassemblyWidget(Controller* controller, QWidget* parent) :
     QWidget(parent), controller_(controller) {
 
-    connect(controller_, &Controller::connected, this, [this]() { setEnabled(true);} );
+    connect(controller_, &Controller::connected, this, [this](const MachineState& machineState) {
+        bool multipleCpus = machineState.availableCpus.size() > 0;
+        cpuCombo_->setVisible(multipleCpus);
+        cpuLabel_->setVisible(multipleCpus);
+        cpuCombo_->clear();
+        int selected = -1;
+        for (int i = 0; i < machineState.availableCpus.size(); i++) {
+            Cpu cpu = machineState.availableCpus[i];
+            if (cpu == machineState.activeCpu) {
+                selected = i;
+            }
+            cpuCombo_->addItem(cpuName(cpu).c_str(), QVariant::fromValue((int)cpu));
+        }
+        cpuCombo_->setCurrentIndex(selected);
+        setEnabled(true);
+
+    } );
     connect(controller_, &Controller::disconnected, this, [this]() { setEnabled(false);} );
     connect(controller_, &Controller::executionPaused, this, [this]() { setEnabled(true);} );
     connect(controller_, &Controller::executionResumed, this, [this]() { setEnabled(false);} );
@@ -67,6 +85,7 @@ DisassemblyWidget::DisassemblyWidget(Controller* controller, QWidget* parent) :
     // Set up disassembly content
     scrollArea_ = new QScrollArea(this);
     content_ = new DisassemblyContent(controller_, scrollArea_);
+    connect(this, &DisassemblyWidget::cpuSelected, content_, &DisassemblyContent::onCpuChanged);
     scrollArea_->setWidgetResizable(true);
     scrollArea_->setWidget(content_);
 
@@ -92,9 +111,21 @@ DisassemblyWidget::DisassemblyWidget(Controller* controller, QWidget* parent) :
     goToAddressBtn_->setEnabled(false);
     connect(goToAddressBtn_, &QPushButton::clicked, goToAddrFct);
 
+    cpuLabel_ = new QLabel("CPU:");
+    cpuCombo_ = new QComboBox();
+    connect(cpuCombo_, &QComboBox::currentIndexChanged, [this](int index) {
+        if (index >= 0) {
+            Cpu cpu = (Cpu)cpuCombo_->itemData(index).toInt();
+            emit cpuSelected(cpu);
+        }
+    });
+
     QHBoxLayout* toolbar = new QHBoxLayout();
     toolbar->addWidget(addressEdit_);
     toolbar->addWidget(goToAddressBtn_);
+    toolbar->addSpacing(20);
+    toolbar->addWidget(cpuLabel_);
+    toolbar->addWidget(cpuCombo_);
     toolbar->addStretch();
 
     // Set up final layout
@@ -126,17 +157,23 @@ std::optional<std::uint16_t> DisassemblyWidget::parseAddress(QString s) {
     return ok ? std::optional<std::uint16_t>(res) : std::nullopt;
 }
 
-//void DisassemblyWidget::resizeEvent(QResizeEvent* event) {
-//    QSize vpSize = viewport()->size();
-//    QSize disassemblySize = widget()->size();
-//    int newW = std::max(vpSize.width(), widget()->sizeHint().width());
-//    disassemblySize.setWidth(newW);
-//    widget()->resize(disassemblySize);
-//}
+// ------------------------------------------------------------
+//
+// DisassemblyContent
+//
+// ------------------------------------------------------------
 
+namespace {
+
+std::unordered_map<Cpu, std::shared_ptr<Disassembler>> disassemblersPerCpu = {
+    { kCpu6502, std::make_shared<Disassembler6502>() },
+    { kCpuZ80, std::make_shared<DisassemblerZ80>() }
+};
+
+}
 
 DisassemblyContent::DisassemblyContent(Controller* controller, QScrollArea* parent) :
-    QWidget(parent), controller_(controller), mouseDown_(false), highlightedLine_(-1), scrollArea_(parent)
+    QWidget(parent), controller_(controller), mouseDown_(false), highlightedLine_(-1), scrollArea_(parent), pc_(0)
 {
     setFont(Resources::robotoMonoFont());
 
@@ -311,9 +348,8 @@ void DisassemblyContent::onConnected(const MachineState& machineState, const Ban
     qDebug() << "DisassemblyWidget::onConnected called";
     memory_ = machineState.memory.at(0); // default bank
     pc_ = machineState.regs.pc;
+    disassembler_ = disassemblersPerCpu[machineState.activeCpu];
     updateDisassembly();
-    this->setMinimumHeight(lines_.size() * lineH_);
-    this->setMaximumHeight(lines_.size() * lineH_);
     onBreakpointsChanged(breakpoints);
     enableControls(true);
 }
@@ -336,21 +372,7 @@ void DisassemblyContent::onExecutionPaused(const MachineState& machineState) {
     memory_ = machineState.memory.at(0); // default bank
     pc_ = machineState.regs.pc;
     updateDisassembly();
-
-//    lines_
-//    int pcBlock = 0;
-//    for (auto it = lines_.begin(); it != lines_.end(); it++, pos++) {
-//        text.append(QString::fromStdString(it->disassembly) + "\n");
-//        if (it->addr == machineState.pc) {
-//            pcBlock = pos;
-//        }
-//    }
-//    setPlainText(text);
-//    highlightLine(pcBlock);
-//    QTextCursor cursor(document()->findBlockByLineNumber(pcBlock));
-//    setTextCursor(cursor);
     update();
-
     enableControls(true);
 }
 
@@ -368,55 +390,19 @@ void DisassemblyContent::onRegistersChanged(const Registers& registers) {
     highlightLine(addressToLine_[registers.pc]);
 }
 
-//void DisassemblyWidget::breakpointMousePressedEvent(QMouseEvent* event) {
-//    if (event->buttons() != Qt::LeftButton) {
-//        // Wrong mouse button, not interested
-//        event->ignore();
-//        return;
-//    }
-//    qDebug() << "mouse pressed: " << event->position() << " " << event->buttons();
-//    mouseDown_ = true;
-//    event->accept();
-//}
+void DisassemblyContent::onCpuChanged(Cpu cpu) {
+    qDebug() << "DisassemblyWidget::onCpuChanged called";
+    disassembler_ = disassemblersPerCpu[cpu];
+    updateDisassembly();
+    update();
+}
 
-//void DisassemblyWidget::breakpointMouseReleasedEvent(QMouseEvent* event) {
-//    if (!mouseDown_) {
-//        // left button was never pressed, ignore.
-//        return;
-//    }
-
-//    QTextBlock block = firstVisibleBlock();
-//    int top = qRound(blockBoundingGeometry(block).translated(contentOffset()).top());
-//    int lineHeight = qRound(blockBoundingRect(block).height());
-//    int blockNr = block.blockNumber() + (top + event->position().y())/lineHeight;
-
-//    qDebug() << "mouse released: " << event->position() << " --> blockNr " << blockNr ;
-
-//    std::uint16_t addr = lines_[blockNr].addr;
-//    auto it = breakpointsPerAddress_.find(addr);
-//    if (it != breakpointsPerAddress_.end()) {
-//        // We *do* have a breakpoint here! Update it.
-//        auto bp = it->second;
-//        bp.enabled = !bp.enabled;
-//        controller_->enableBreakpoint(bp.number, bp.enabled);
-//    } else {
-//        // No breakpoint, create one
-//        controller_->createBreakpoint(Breakpoint::EXEC, addr, addr);
-//    }
-
-//    mouseDown_ = false;
-//    event->accept();
-
-//    update();
-//}
-
-void DisassemblyContent::updateDisassembly() {
-    Disassembler6502 disassembler;
-
-    auto before = disassembler.disassembleBackward(pc_, memory_, 65636, {});
-    auto after = disassembler.disassembleForward(pc_, memory_, 65636);
+void DisassemblyContent::updateDisassembly() {    
+    auto before = disassembler_->disassembleBackward(pc_, memory_, 65636, {});
+    auto after = disassembler_->disassembleForward(pc_, memory_, 65636);
 
     lines_.clear();
+    addressToLine_.clear();
     lines_.reserve( before.size() + after.size() ); // preallocate memory
     lines_.insert( lines_.end(), before.begin(), before.end() );
     lines_.insert( lines_.end(), after.begin(), after.end() );
@@ -424,7 +410,10 @@ void DisassemblyContent::updateDisassembly() {
         addressToLine_[lines_[i].addr] = i;
     }
 
-    highlightLine(addressToLine_[pc_]);
+    this->setMinimumHeight(lines_.size() * lineH_);
+    this->setMaximumHeight(lines_.size() * lineH_);
+
+    goTo(pc_);
 }
 
 void DisassemblyContent::highlightLine(int line) {

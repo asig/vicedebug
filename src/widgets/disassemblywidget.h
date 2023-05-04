@@ -24,6 +24,8 @@
 #include <QScrollArea>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QComboBox>
+#include <QLabel>
 
 #include "controller.h"
 #include "disassembler.h"
@@ -38,6 +40,9 @@ class DisassemblyWidget : public QWidget {
 public:
     DisassemblyWidget(Controller* controller, QWidget* parent);
     virtual ~DisassemblyWidget();
+
+signals:
+    void cpuSelected(Cpu cpu);
 
 //public slots:
 //    void onConnected(const MachineState& machineState, const Banks& banks, const Breakpoints& breakpoints);
@@ -56,6 +61,8 @@ private:
 
     QLineEdit* addressEdit_;
     QPushButton* goToAddressBtn_;
+    QLabel* cpuLabel_;
+    QComboBox* cpuCombo_;
 };
 
 class DisassemblyContent : public QWidget {
@@ -87,6 +94,7 @@ public slots:
     void onBreakpointsChanged(const Breakpoints& breakpoints);
     void onRegistersChanged(const Registers& registers);
     void onMemoryChanged(std::uint16_t bankId, std::uint16_t addr, std::vector<std::uint8_t> data);
+    void onCpuChanged(Cpu cpu);
 
 private:
     void paintLine(QPainter& painter, const QRect& updateRect, int line);
@@ -100,11 +108,11 @@ private:
     std::map<std::uint16_t, int> addressToLine_;
     std::vector<std::uint8_t> memory_;
     std::uint16_t pc_;
+    std::shared_ptr<Disassembler> disassembler_;
 
     QScrollArea* scrollArea_;
 
     int highlightedLine_;
-
     bool mouseDown_;
 
 
@@ -116,7 +124,6 @@ private:
     int separatorW_; // Separator width between address and bytes, as well as bytes and text
     int addressW_; // Address part
     int hexW_;
-
 };
 
 }

@@ -48,6 +48,7 @@ set(PROJECT_SOURCES
         src/widgets/watcheswidget.h
         src/widgets/watcheswidget.cpp
         src/machinestate.h
+        src/machinestate.cpp
         src/breakpoints.h
         src/watches.h
         src/watches.cpp
