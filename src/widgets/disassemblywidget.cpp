@@ -62,7 +62,7 @@ DisassemblyWidget::DisassemblyWidget(Controller* controller, QWidget* parent) :
     QWidget(parent), controller_(controller) {
 
     connect(controller_, &Controller::connected, this, [this](const MachineState& machineState) {
-        bool multipleCpus = machineState.availableCpus.size() > 0;
+        bool multipleCpus = machineState.availableCpus.size() > 1;
         cpuCombo_->setVisible(multipleCpus);
         cpuLabel_->setVisible(multipleCpus);
         cpuCombo_->clear();
