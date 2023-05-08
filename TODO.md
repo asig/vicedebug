@@ -1,9 +1,14 @@
 # Bugs
 - [X] Crash when disconnect
-- [ ] Crash on reconnect
+- [X] Crash on reconnect
+
 - Memory Widget
    - [X] Watch type "float" not highlighted correctly
-   - [ ] Editing text does not work
+   - [X] Editing text does not work
+   - [X] Search
+         - [X] if there's only one instance of data, find-next and find-prev return "not found"
+         - [X] Text elem should have foces when find group is opened
+         - [X] When switching from hex to text or the other way round, search results are not cleared   
 
 - Watches Widget
    - [X] Strings not PETSCII encoded?

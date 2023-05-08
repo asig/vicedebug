@@ -60,6 +60,9 @@ MainWindow::MainWindow(Controller* controller, QWidget* parent)
     createMenuBar();
     createMainUI();
 
+    connect(findTextAction_, &QAction::triggered, memoryWidget_, &MemoryWidget::onFindText);
+    connect(findHexAction_, &QAction::triggered, memoryWidget_, &MemoryWidget::onFindHex);
+
     connect(controller_, &Controller::connected, this, &MainWindow::onConnected);
     connect(controller_, &Controller::connectionFailed, this, &MainWindow::onConnectionFailed);
     connect(controller_, &Controller::disconnected, this, &MainWindow::onDisconnected);
@@ -130,6 +133,18 @@ void MainWindow::createActions() {
 
     // We start with only "continue" visible
     pauseAction_->setVisible(false);
+
+    a = new QAction(tr("Find text"));
+    a->setShortcut(Qt::CTRL | Qt::Key_F);
+    a->setEnabled(false);
+    a->setToolTip(a->text() + " (" + tr("Ctrl-F") + ")");
+    findTextAction_ = a;
+
+    a = new QAction(tr("Find hex"));
+    a->setShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_F);
+    a->setEnabled(false);
+    a->setToolTip(a->text() + " (" + tr("Ctrl-Shift-F") + ")");
+    findHexAction_ = a;
 }
 
 void MainWindow::createToolBar() {
@@ -213,6 +228,10 @@ void MainWindow::createMenuBar() {
 
 //    dockWidgetMenu = menuBar()->addMenu(tr("&Dock Widgets"));
 
+    QMenu* findMenu = menuBar()->addMenu(tr("&Find"));
+    findMenu->addAction(findTextAction_);
+    findMenu->addAction(findHexAction_);
+
     QMenu *aboutMenu = menuBar()->addMenu(tr("About"));
     QAction *aboutAct = aboutMenu->addAction(tr("&About"), this, &MainWindow::onAboutClicked);
     aboutAct->setStatusTip(tr("Show the application's About box"));
@@ -233,12 +252,12 @@ void MainWindow::createMainUI() {
     lowerPart->setStretchFactor(2, 1);
 
 
-    MemoryWidget* memoryWidget = new MemoryWidget(controller_, this);
+    memoryWidget_ = new MemoryWidget(controller_, this);
     DisassemblyWidget* disassembly = new DisassemblyWidget(controller_, this);
 
     QSplitter* upperPart = new QSplitter(Qt::Horizontal);
     upperPart->addWidget(disassembly);
-    upperPart->addWidget(memoryWidget);
+    upperPart->addWidget(memoryWidget_);
     upperPart->setSizes({10000, 20000}); // Use large values, Qt seems to keep the ratio. See also https://stackoverflow.com/questions/43831474/how-to-equally-distribute-the-width-of-qsplitter
 
     QSplitter* all = new QSplitter(Qt::Vertical);
@@ -301,6 +320,9 @@ void MainWindow::onConnected(const MachineState& machineState) {
     disconnectAction_->setVisible(true);
     disconnectAction_->setEnabled(true);
 
+    findHexAction_->setEnabled(true);
+    findTextAction_->setEnabled(true);
+
     emulatorRunning_ = false;
     updateDebugControlButtons();
 }
@@ -318,13 +340,11 @@ void MainWindow::onDisconnected() {
     connectAction_->setVisible(true);
     connectAction_->setEnabled(true);
 
-    stepInAction_->setEnabled(false);
-    stepOutAction_->setEnabled(false);
-    stepOverAction_->setEnabled(false);
-    continueAction_->setEnabled(false);
-    continueAction_->setVisible(true);
-    pauseAction_->setEnabled(false);
-    pauseAction_->setVisible(false);
+    findHexAction_->setEnabled(false);
+    findTextAction_->setEnabled(false);
+
+    emulatorRunning_ = true;
+    updateDebugControlButtons();
 }
 
 void MainWindow::updateDebugControlButtons() {

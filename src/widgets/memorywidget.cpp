@@ -35,6 +35,8 @@
 #include <QLabel>
 #include <QToolTip>
 #include <QMenu>
+#include <QGroupBox>
+#include <QPushButton>
 
 #include <iostream>
 
@@ -53,6 +55,14 @@ const QColor kFg = QColor(Qt::black);
 const QColor kFgSelected = QColor(Qt::yellow);
 const QColor kFgDisabled = QColor(Qt::lightGray).lighter(80);
 
+const QColor kFindResultFg = QColor(Qt::white);
+const QColor kFindResultBg = QColor(50,50,255);
+
+// Find
+const QColor kFindFound = Qt::black;
+const QColor kFindNotFound = QColor(255,50,50);
+
+
 Watches filterByBank(const Watches& watches, int bank) {
     Watches res;
     for (const auto& w : watches) {
@@ -63,7 +73,156 @@ Watches filterByBank(const Watches& watches, int bank) {
     return res;
 }
 
+bool isHexChar(QChar c) {
+    return ('0' <= c && c <= '9') || ('a' <= c && c <= 'f' ) || ('A' <= c && c <= 'F');
 }
+
+}
+
+// ----------------------
+// FindGroup
+// ----------------------
+
+FindGroup::FindGroup(QWidget* parent)
+    : QGroupBox(parent) {
+
+    textEdit_ = new QLineEdit();
+    textEdit_->setFont(Resources::robotoMonoFont());
+    connect(textEdit_, &QLineEdit::textEdited, [this](const QString& s) {
+        bool valid = isValidSearch(s);
+        if (valid) {
+            isFirstFind_ = true;
+            find(1);
+        } else {
+            emit markResult({.found = false});
+        }
+    });
+
+    findPrevBtn_ = new QPushButton("Find previous");
+    findPrevBtn_->setEnabled(false);
+    connect(findPrevBtn_, &QPushButton::clicked, [this] { find(-1); });
+
+    findNextBtn_ = new QPushButton("Find next");
+    findNextBtn_->setEnabled(false);
+    connect(findNextBtn_, &QPushButton::clicked, [this] { find(1); });
+
+    closeBtn_ = new QToolButton();
+    closeBtn_->setIcon(QIcon(":/images/codicons/close.svg"));
+    connect(closeBtn_, &QToolButton::clicked, this, &FindGroup::stop);
+
+    findLabel_ = new QLabel("Find:");
+    QHBoxLayout* hLayout = new QHBoxLayout();
+    hLayout->addWidget(findLabel_);
+    hLayout->addWidget(textEdit_);
+    hLayout->addWidget(findPrevBtn_);
+    hLayout->addWidget(findNextBtn_);
+    hLayout->addStretch();
+    hLayout->addWidget(closeBtn_);
+
+    setLayout(hLayout);
+    setVisible(false);
+}
+
+FindGroup::~FindGroup() {
+}
+
+void FindGroup::keyPressEvent(QKeyEvent* event) {
+    if (event->key() == Qt::Key_Escape) {
+        event->accept();
+        stop();
+    }
+}
+
+void FindGroup::start(FindFunc findFunc, bool hexMode) {
+    findFunc_ = findFunc;
+    isHexMode_ = hexMode;
+    findLabel_->setText(hexMode ? "Find (hex):" : "Find:");
+    isFirstFind_ = true;
+    lastFindPos_ = 0;
+    textEdit_->clear();
+    setVisible(true);
+    textEdit_->setFocus();
+    updateUI(false);
+}
+
+void FindGroup::stop() {
+    setVisible(false);
+    emit findFinished();
+}
+
+void FindGroup::updateUI(bool found) {
+    QColor col = found ? kFindFound : kFindNotFound;
+    QPalette palette;
+    palette.setColor(QPalette::Text,col);
+    textEdit_->setPalette(palette);
+    findNextBtn_->setEnabled(found);
+    findPrevBtn_->setEnabled(found);
+}
+
+void FindGroup::find(int dir) {
+    if (isFirstFind_) {
+        lastFindPos_ += -dir;
+        isFirstFind_ = false;
+    }
+    auto searchData = convertToSearchData(textEdit_->text());
+    FindResult res = findFunc_(searchData, lastFindPos_, dir);
+    if (res.found) {
+        lastFindPos_ = res.resultPos;
+    } else {
+        lastFindPos_ = 0;
+    }
+    updateUI(res.found);
+    emit markResult(res);
+}
+
+bool FindGroup::isValidSearch(const QString& s) {
+    if (isHexMode_) {
+        int hexLen = 0;
+        for (int i = 0; i < s.length(); i++) {
+            QChar c = s[i];
+            if (c.isSpace()) {
+                continue;
+            } else if (!isHexChar(c)) {
+                return false;
+            }
+            hexLen++;
+        }
+        return (hexLen%2 == 0);
+    } else {
+        return s.length() > 0;
+    }
+
+}
+
+std::vector<std::uint8_t> FindGroup::convertToSearchData(const QString& s) {
+    std::vector<std::uint8_t> res;
+    if (isHexMode_) {
+        QString filtered;
+        // Filter out all non-hex chars
+        for (int i = 0; i < s.length(); i++) {
+            QChar c = s[i];
+            if (isHexChar(c)) {
+                filtered += c;
+            }
+        }
+
+        // Translate to byte array
+        for (int i = 0; i < filtered.length()/2; i++) {
+            res.push_back(filtered.mid(2*i,2).toUInt(nullptr,16));
+        }
+    } else {
+        for (int i = 0; i < s.length(); i++) {
+            // TODO convert to PETSCII?
+            res.push_back(s[i].cell());
+        }
+    }
+    return res;
+}
+
+
+// ----------------------
+// MemoryWidget
+// ----------------------
 
 MemoryWidget::MemoryWidget(Controller* controller, QWidget* parent) :
     controller_(controller), QWidget(parent)
@@ -95,10 +254,20 @@ MemoryWidget::MemoryWidget(Controller* controller, QWidget* parent) :
     toolbar->addWidget(bankCombo_);
     toolbar->addStretch();
 
+    // Set up find group
+    findGroup_ = new FindGroup(this);
+    connect(findGroup_, &FindGroup::findFinished, [this]{
+        content_->markSearchResult({.found=false});
+    });
+    connect(findGroup_, &FindGroup::markResult, [this](const FindResult& r) {
+        content_->markSearchResult(r);
+    });
+
     // Set up final layout
     QVBoxLayout* layout = new QVBoxLayout();
     layout->addLayout(toolbar);
     layout->addWidget(scrollArea_);
+    layout->addWidget(findGroup_);
 
     setLayout(layout);
 
@@ -114,6 +283,20 @@ MemoryWidget::MemoryWidget(Controller* controller, QWidget* parent) :
 }
 
 MemoryWidget::~MemoryWidget() {
+}
+
+void MemoryWidget::onFindText() {
+    content_->markSearchResult({.found=false});
+    findGroup_->start([this] (const std::vector<std::uint8_t>& data, std::uint16_t pos, std::int8_t direction) {
+        return content_->find(data, pos, direction);
+    }, /*hexMode=*/false);
+}
+
+void MemoryWidget::onFindHex() {
+    content_->markSearchResult({.found=false});
+    findGroup_->start([this] (const std::vector<std::uint8_t>& data, std::uint16_t pos, std::int8_t direction) {
+        return content_->find(data, pos, direction);
+    }, /*hexMode=*/true);
 }
 
 void MemoryWidget::onConnected(const MachineState& machineState, const Banks& banks, const Breakpoints& breakpoints) {
@@ -177,6 +360,10 @@ void MemoryWidget::onWatchesChanged(const Watches& watches) {
     content_->setMemory(memory_, selectedBank_, breakpoints_, watches_); // So far, breakpoints are only supported for default bank...
 }
 
+// ----------------------
+// MemoryContent
+// ----------------------
+
 MemoryContent::MemoryContent(Controller* controller, QScrollArea* parent) :
     QWidget(parent), controller_(controller), scrollArea_(parent)
 {
@@ -234,6 +421,7 @@ void MemoryContent::setMemory(const std::unordered_map<std::uint16_t, std::vecto
         }
     }
     updateSize(memory_.size() / kBytesPerLine);
+    markSearchResult({.found=false});
     update();
 }
 
@@ -371,6 +559,7 @@ void MemoryContent::paintEvent(QPaintEvent* event) {
             int textX = borderW_ + addressW_ + separatorW_ + kBytesPerLine*hexSpaceW_ - hexCharW_ + separatorW_ + i * charW_;
             const Breakpoint* bp = breakpoint_[pos + i];
             const Watch* w = watch_[pos+i];
+            bool inSearchResult = pos + i >= resultStart_ && pos + i < resultStart_+resultLen_;
             if (pos + i < memSize) {
                 std::uint8_t c = memory_[pos+i];
                 hex = QString::asprintf("%02X ", c);
@@ -379,7 +568,15 @@ void MemoryContent::paintEvent(QPaintEvent* event) {
                 hex = "   ";
                 text = " ";
             }
-            if (bp != nullptr || w != nullptr) {
+            if (inSearchResult) {
+                painter.setBrush(kFindResultBg);
+                painter.setPen(Qt::NoPen);
+                painter.drawRect(hexX, y - ascent_, hexSpaceW_ - hexCharW_, lineH_);
+                painter.drawRect(textX, y - ascent_, charW_, lineH_);
+                painter.setPen(kFindResultFg);
+                painter.setBackgroundMode(Qt::TransparentMode);
+                painter.setBrush(Qt::NoBrush);
+            } else if (bp != nullptr || w != nullptr) {
                 QColor bpBgCol = (bp != nullptr && bp->enabled) ? bpEnabledBgCol : bpDisabledBgCol;
                 if (w == nullptr) { // Only breakpoint
                     painter.setBrush(bpBgCol);
@@ -399,11 +596,11 @@ void MemoryContent::paintEvent(QPaintEvent* event) {
                 painter.setBackgroundMode(Qt::TransparentMode);
                 painter.setBrush(Qt::NoBrush);
             }
-            painter.setFont(Resources::robotoMonoFont());            
+            painter.setFont(Resources::robotoMonoFont());
             painter.drawText(hexX, y, hex);
             painter.setFont(Resources::c64Font());
             painter.drawText(textX , y, text);
-            if (bp || w) {
+            if (bp || w || inSearchResult) {
                 painter.setBackgroundMode(Qt::OpaqueMode);
                 painter.setPen(fg);
             }
@@ -543,6 +740,12 @@ void MemoryContent::moveCursorRight() {
     ensureCursorVisible();
 }
 
+void MemoryContent::ensurePosVisible(std::uint16_t pos) {
+    int y = pos / kBytesPerLine * lineH_;
+    int x = borderW_ + addressW_ + separatorW_ + kBytesPerLine*hexSpaceW_ - hexCharW_ + separatorW_ + (pos % kBytesPerLine) * charW_;
+    scrollArea_->ensureVisible(x, y, 0, 50);
+}
+
 void MemoryContent::ensureCursorVisible() {
     int x, y;
     if (nibbleMode_) {
@@ -631,6 +834,33 @@ void MemoryContent::updateSize(int lines) {
     int w = borderW_ + addressW_ + separatorW_ + kBytesPerLine * hexSpaceW_ - hexCharW_ + separatorW_ + kBytesPerLine * charW_ + borderW_;
     int h = lines * lineH_;
     setMinimumSize(w, h);
+}
+
+FindResult MemoryContent::find(const std::vector<std::uint8_t>& data, std::uint16_t pos, std::int8_t direction) {
+    std::uint16_t startPos = pos;
+    do {
+        pos += direction;
+        int i;
+        for (i = 0; i < data.size() && (data[i] == memory_[(pos + i) & 0xffff]); i++)
+            ;
+        if (i == data.size()) {
+            // Woohoo, we found the string!
+            return {.found = true, .resultPos = pos, .resultLen = (int)data.size()};
+        }
+    } while (pos != startPos);
+    return {.found = false};
+}
+
+void MemoryContent::markSearchResult(const FindResult& res) {
+    if (res.found) {
+        resultStart_ = res.resultPos;
+        resultLen_ = res.resultLen;
+        ensurePosVisible(resultStart_);
+    } else {
+        resultStart_ = 0;
+        resultLen_ = 0;
+    }
+    update();
 }
 
 }

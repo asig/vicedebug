@@ -25,6 +25,7 @@
 #include <QToolButton>
 
 #include "widgets/disassemblywidget.h"
+#include "widgets/memorywidget.h"
 #include "controller.h"
 
 namespace vicedebug {
@@ -66,7 +67,7 @@ private:
 
     void updateDebugControlButtons();
 
-    DisassemblyWidget* disassembly_;
+    MemoryWidget* memoryWidget_;
 
     QAction* connectAction_;
     QAction* disconnectAction_;
@@ -78,6 +79,10 @@ private:
     QAction* stepInAction_;
     QAction* stepOutAction_;
     QAction* stepOverAction_;
+
+    // Find actions
+    QAction* findTextAction_;
+    QAction* findHexAction_;
 
     bool emulatorRunning_;
 
