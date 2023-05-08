@@ -68,9 +68,9 @@ MachineState Controller::getMachineState() {
 
     machineState.regs = registersFromResponse(registersResponse);
 
-    // TODO set active and available CPUs
+    // TODO set active CPU if we're a C128
     machineState.activeCpu = kCpu6502;
-    machineState.availableCpus = { kCpu6502, kCpuZ80 };
+    machineState.availableCpus = availableCpus_;
 
     return machineState;
 }
@@ -103,6 +103,15 @@ void Controller::connectToVice(QString host, int port) {
     std::sort(availableBanks_.begin(), availableBanks_.end(), [](const Bank& b1, const Bank& b2) {
         return b1.id < b2.id;
     });
+
+    availableCpus_.clear();
+    availableCpus_.push_back(kCpu6502);
+    for (const auto& bank : availableBanks_) {
+        if (bank.name == "vdc") {
+            // Only the C128 has a "vdc" bank, and only the C128 has a Z80
+            availableCpus_.push_back(kCpuZ80);
+        }
+    }
 
     auto checkpointListResponseFuture = viceClient_->checkpointList();
     checkpointListResponseFuture.waitForFinished();

@@ -39,6 +39,7 @@ struct Bank {
 };
 
 typedef std::vector<Bank> Banks;
+typedef std::vector<Cpu> Cpus;
 
 struct Registers {
     constexpr static const std::uint8_t kRegAId = 0;
@@ -60,7 +61,7 @@ struct MachineState {
     std::unordered_map<std::uint16_t, std::vector<std::uint8_t>> memory;
     Registers regs;
     Cpu activeCpu;
-    std::vector<Cpu> availableCpus;
+    Cpus availableCpus;
 };
 
 }

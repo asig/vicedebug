@@ -86,8 +86,9 @@ private:
     int port_;
     bool connected_;
     ViceClient* viceClient_;
+    Cpus availableCpus_;
     std::map<std::uint32_t, Breakpoint> breakpoints_;
-    Banks availableBanks_;
+    Banks availableBanks_;    
     Watches watches_;
     std::uint32_t nextWatchNumber_;
 };
