@@ -86,6 +86,7 @@ private:
     int port_;
     bool connected_;
     ViceClient* viceClient_;
+    bool isC128_;
     Cpus availableCpus_;
     std::map<std::uint32_t, Breakpoint> breakpoints_;
     Banks availableBanks_;    

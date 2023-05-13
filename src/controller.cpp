@@ -70,6 +70,9 @@ MachineState Controller::getMachineState() {
 
     // TODO set active CPU if we're a C128
     machineState.activeCpu = kCpu6502;
+    if (isC128_ && (machineState.memory[0][0xd505] & 1) == 0) {
+        machineState.activeCpu = kCpuZ80;
+    }
     machineState.availableCpus = availableCpus_;
 
     return machineState;
@@ -104,12 +107,14 @@ void Controller::connectToVice(QString host, int port) {
         return b1.id < b2.id;
     });
 
+    isC128_ = false;
     availableCpus_.clear();
     availableCpus_.push_back(kCpu6502);
     for (const auto& bank : availableBanks_) {
         if (bank.name == "vdc") {
             // Only the C128 has a "vdc" bank, and only the C128 has a Z80
             availableCpus_.push_back(kCpuZ80);
+            isC128_ = true;
         }
     }
 
