@@ -19,6 +19,7 @@
 
 - Disassembly:
    - [X] Scrollbars not disabled at startup
+   - [ ] Backward disassembly for Z80 not working.
 
 # TODO
 
@@ -52,9 +53,9 @@
 - [X] Context-Menu that allows:
       - [X] add a watch
       - [X] add a breakpoint
-- [ ] Search
-      - [ ] hex
-      - [ ] text
+- [X] Search
+      - [X] hex
+      - [X] text
 
 ## Breakpoints Widget
 - [X] Add breakpoint
@@ -69,6 +70,7 @@
 - [X] Remove
 - [X] Edit
 - [X] Different view types (int, uint, hex, text)
+      - [ ] Add binary representation for uint types
 - [X] Remove "int hex" variants (they are the same as uint hex)
 - [X] Support banks
       - [X] in Watches Dialog
