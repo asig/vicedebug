@@ -1926,8 +1926,22 @@ bool checkValidInstr(int depth, std::uint16_t pos, const std::vector<std::uint8_
     }
     Disassembler::Line res;
     InstrDesc instr = fetchInstrDesc(pos, memory, res);
+    int actualLen = res.bytes.size();
+    if (!(actualLen >= 2 && (res.bytes[0] == 0xdd || res.bytes[0] == 0xfd) && res.bytes[1] == 0xcb)) {
+        switch(instr.param) {
+        case ABS8:
+        case REL:
+        case DISP:
+            actualLen++;
+            break;
+        case ABS16:
+        case DISP_ABS8:
+            actualLen+=2;
+            break;
+        }
+    }
 
-    if (len != res.bytes.size()) {
+    if (len != actualLen) {
         // length is not matching
         return false;
     }

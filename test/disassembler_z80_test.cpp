@@ -5435,6 +5435,92 @@ private slots:
         verifyLine(lines[0], 0x07fc, { 0xFD,0xCB,0x23,0xFF }, "*SET 7, (IY+$23), A");
     }
 
+    void TestDisassembleBackward() {
+        /*
+
+From VICE's x128:
+
+CPU Z80
+
+.C:0121  C1          POP BC
+.C:0122  C5          PUSH BC
+.C:0123  21 00 00    LD HL, #$0000
+.C:0126  39          ADD HL,SP
+.C:0127  31 BE 03    LD SP, #$03BE
+.C:012a  22 9A 03    LD ($039A),HL
+.C:012d  C5          PUSH BC
+.C:012e  EB          EX DE,HL
+.C:012f  22 98 03    LD ($0398),HL
+.C:0132  7C          LD A,H
+.C:0133  B5          OR L
+.C:0134  F5          PUSH AF
+.C:0135  CC 00 02    CALL Z, $0200
+.C:0138  F1          POP AF
+.C:0139  C4 30 02    CALL NZ, $0230
+.C:013c  D1          POP DE
+.C:013d  21 00 01    LD HL, #$0100
+.C:0140  7E          LD A,(HL)
+.C:0141  FE C9       CP #$C9
+.C:0143  CA 9E 01    JP Z, $019E
+.C:0146  7A          LD A,D
+.C:0147  3D          DEC A
+.C:0148  B3          OR E
+
+    */
+
+        initMem(0x0121, {
+                    0xC1,
+                    0xC5,
+                    0x21,0x00,0x00,
+                    0x39,
+                    0x31,0xBE,0x03,
+                    0x22,0x9A,0x03,
+                    0xC5,
+                    0xEB,
+                    0x22,0x98,0x03,
+                    0x7C,
+                    0xB5,
+                    0xF5,
+                    0xCC,0x00,0x02,
+                    0xF1,
+                    0xC4,0x30,0x02,
+                    0xD1,
+                    0x21,0x00,0x01,
+                    0x7E,
+                    0xFE,0xC9,
+                    0xCA,0x9E,0x01,
+                    0x7A,
+                    0x3D,
+                    0xB3,
+                });
+
+
+        auto lines = disassembler_.disassembleBackward(0x0147, memory_, 21, {});
+        QVERIFY(lines.size() == 21);
+
+        verifyLine(lines[ 0], 0x0121, {0xC1             }, "POP BC");
+        verifyLine(lines[ 1], 0x0122, {0xC5             }, "PUSH BC");
+        verifyLine(lines[ 2], 0x0123, {0x21, 0x00, 0x00 }, "LD HL, #$0000");
+        verifyLine(lines[ 3], 0x0126, {0x39             }, "ADD HL,SP");
+        verifyLine(lines[ 4], 0x0127, {0x31, 0xBE, 0x03 }, "LD SP, #$03BE");
+        verifyLine(lines[ 5], 0x012a, {0x22, 0x9A, 0x03 }, "LD ($039A),HL");
+        verifyLine(lines[ 6], 0x012d, {0xC5             }, "PUSH BC");
+        verifyLine(lines[ 7], 0x012e, {0xEB             }, "EX DE,HL");
+        verifyLine(lines[ 8], 0x012f, {0x22, 0x98, 0x03 }, "LD ($0398),HL");
+        verifyLine(lines[ 9], 0x0132, {0x7C             }, "LD A,H");
+        verifyLine(lines[10], 0x0133, {0xB5             }, "OR L");
+        verifyLine(lines[11], 0x0134, {0xF5             }, "PUSH AF");
+        verifyLine(lines[12], 0x0135, {0xCC, 0x00, 0x02 }, "CALL Z, $0200");
+        verifyLine(lines[13], 0x0138, {0xF1             }, "POP AF");
+        verifyLine(lines[14], 0x0139, {0xC4, 0x30, 0x02 }, "CALL NZ, $0230");
+        verifyLine(lines[15], 0x013c, {0xD1             }, "POP DE");
+        verifyLine(lines[16], 0x013d, {0x21, 0x00, 0x01 }, "LD HL, #$0100");
+        verifyLine(lines[17], 0x0140, {0x7E             }, "LD A,(HL)");
+        verifyLine(lines[18], 0x0141, {0xFE, 0xC9       }, "CP #$C9");
+        verifyLine(lines[19], 0x0143, {0xCA, 0x9E, 0x01 }, "JP Z, $019E");
+        verifyLine(lines[20], 0x0146, {0x7A             }, "LD A,D");
+    }
+
     void cleanupTestCase() {
     }
 
