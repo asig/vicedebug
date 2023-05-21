@@ -1,14 +1,56 @@
 # README
 
-## Build
+## Intro
 
-### Install dev tools
-sudo apt-get install \
-    qtcreator
+`vicedebug` is a debugger frontend for VICE that uses the binary debugger 
+protocol. It can be used with any system that VICE can emulate (except 
+SuperPET with a 6809 CPU), but in all honesty, I only care about C128
+debugability :-) It *does* support the Z80 CPU, and automatically detects
+what CPU is active.
 
-### Install dependencies
-```
-sudo apt-get install \
-    cmake \
-    qt6-base-dev
-```
+`vicedebug` was used to debug a bunch of small C128 intros, but it 
+is far from complete. If you end up in a weird situation, try to
+disconnect/reconnect. Also, please file a bug report/feature request
+on [https://github.com/asig/vicedebug](https://github.com/asig/vicedebug)!
+
+Although `vicedebug` will run on any platform where Qt is available,
+all the development happened under Ubuntu. *Some* testing was done under
+Windows, but besides that, *no* time was spent trying to make it work
+or even look good on any other platform. 
+
+## Building
+
+1. Install dev tools: `sudo apt-get install qtcreator`
+2. Install dependencies: `sudo apt-get install cmake qt6-base-dev`
+3. Compile `vicedebug`: `cmake . && make -j$(nproc)`
+
+## Running `vicedebug`
+1. Make sure that you have an VICE emulator running that was started with the `-binarymonitor` flag.
+2. Execute `./vicedebug` 
+3. Click the "connect" button (top left in the toolbar)
+4. Profit! 
+
+
+## Using `vicedebug`
+
+### The main window
+TODO
+
+### Disassembly view
+TODO
+
+### Memory view
+TODO
+
+### Breakpoints
+TODO
+
+### Watches
+TODO
+
+### Other tools
+TODO
+
+## License
+Copyright (c) 2023 Andreas Signer.  
+Licensed under [GPLv3](https://www.gnu.org/licenses/gpl-3.0).
