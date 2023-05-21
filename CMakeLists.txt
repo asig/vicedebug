@@ -33,6 +33,8 @@ set(PROJECT_SOURCES
         resources/resources.qrc
         src/resources.h
         src/resources.cpp
+        src/dialogs/aboutdialog.h
+        src/dialogs/aboutdialog.cpp
         src/dialogs/breakpointdialog.h
         src/dialogs/breakpointdialog.cpp
         src/dialogs/watchdialog.h

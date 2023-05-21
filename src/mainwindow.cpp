@@ -31,6 +31,7 @@
 #include <QShortcut>
 
 #include "resources.h"
+#include "dialogs/aboutdialog.h"
 #include "widgets/watcheswidget.h"
 #include "widgets/breakpointswidget.h"
 #include "widgets/registerswidget.h"
@@ -309,7 +310,8 @@ void MainWindow::onPauseClicked() {
 }
 
 void MainWindow::onAboutClicked() {
-    // TODO(asigner): implement me
+    AboutDialog dlg(this);
+    dlg.exec();
 }
 
 void MainWindow::onConnected(const MachineState& machineState) {
