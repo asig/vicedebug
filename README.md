@@ -20,16 +20,28 @@ or even look good on any other platform.
 
 ## Building
 
-1. Install dev tools: `sudo apt-get install qtcreator`
-2. Install dependencies: `sudo apt-get install cmake qt6-base-dev`
-3. Compile `vicedebug`: `cmake . && make -j$(nproc)`
+### Installing prerequisites
+Assuming you're on Ubuntu, run this command:
+
+```bash
+sudo apt-get install qtcreator cmake qt6-base-dev`
+```
+
+On other systems, run the equivalent commands that give you a dev
+
+### Building the binary
+
+The most basic command line: `cmake . && make -j$(nproc)`
+
+Of course, you can also just open project in QtCreator and build it from there.
+On Windows, this is in my opinion by far the easiest approach.
+
 
 ## Running `vicedebug`
 1. Make sure that you have an VICE emulator running that was started with the `-binarymonitor` flag.
 2. Execute `./vicedebug` 
 3. Click the "connect" button (top left in the toolbar)
-4. Profit! 
-
+4. Enjoy! 
 
 ## Using `vicedebug`
 
