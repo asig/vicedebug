@@ -170,8 +170,8 @@ void MainWindow::createMenuBar() {
 
     fileMenu->addAction(connectAction_);
     fileMenu->addAction(disconnectAction_);
-    fileMenu->addSeparator();
-    fileMenu->addAction(loadSymbolsAction_);
+//    fileMenu->addSeparator();
+//    fileMenu->addAction(loadSymbolsAction_);
     fileMenu->addSeparator();
     fileMenu->addAction(tr("&Quit"), this, &QWidget::close);
 
