@@ -24,8 +24,6 @@
 
 #include <iostream>
 
-//#include <bit>
-
 #include "connectionworker.h"
 #include "vectorutils.h"
 
@@ -34,7 +32,7 @@ namespace vicedebug {
 template<typename T>
 class ResponseSetterImpl : public ResponseSetter {
 public:
-    ResponseSetterImpl<T>(ConnectionWorker* connectionWorker, QPromise<T>* promise)
+    ResponseSetterImpl(ConnectionWorker* connectionWorker, QPromise<T>* promise)
         : promise_(promise), connectionWorker_(connectionWorker), complete_(false) {}
 
     void set(std::shared_ptr<Response> response) override {
