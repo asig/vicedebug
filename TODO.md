@@ -19,7 +19,8 @@
 
 - Disassembly:
    - [X] Scrollbars not disabled at startup
-   - [ ] Backward disassembly for Z80 not working.
+   - [X] Backward disassembly for Z80 not working.
+   - [ ] Backward disassembly needs to use disassembly hints from earlier forward disassembly
 
 # TODO
 
@@ -87,13 +88,13 @@
 - [ ] Derive system we're debugging from VICE resopnses
 - [X] Use different colors for icons in toolbar menu
 - [ ] Add "Connect" and "Quick connect" menu
-- [ ] Add About box
+- [X] Add About box
 - [ ] add sprite viewer (all sprites, currently active sprites)
 - [ ] Font viewer (currently installed font)
 - [ ] Screen viewer (currently active screen)
-- [ ] Support Z80 for Commodore 128
+- [X] Support Z80 for Commodore 128
       - [X] Disassembler
-      - [ ] Figure out when Z80 is active
+      - [X] Figure out when Z80 is active
 - [ ] Support CPU jams
 
 ## Make it look good
