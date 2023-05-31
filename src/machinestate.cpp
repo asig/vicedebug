@@ -23,8 +23,8 @@ namespace vicedebug {
 
 std::string cpuName(Cpu cpu) {
     switch(cpu) {
-    case kCpu6502: return "6502";
-    case kCpuZ80: return "Z80";
+    case Cpu::MOS6502: return "6502";
+    case Cpu::Z80: return "Z80";
     default: return "<unknown>";
     }
 }

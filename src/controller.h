@@ -75,6 +75,7 @@ private slots:
     void onResumedReceived(std::uint16_t pc);
 
 private:
+    System determineSystem() const;
     Registers registersFromResponse(RegistersResponse response) const;
     MachineState getMachineState();
 
@@ -86,7 +87,7 @@ private:
     int port_;
     bool connected_;
     ViceClient* viceClient_;
-    bool isC128_;
+    System system_;
     Cpus availableCpus_;
     std::map<std::uint32_t, Breakpoint> breakpoints_;
     Banks availableBanks_;    

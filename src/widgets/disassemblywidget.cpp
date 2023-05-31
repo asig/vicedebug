@@ -166,8 +166,8 @@ std::optional<std::uint16_t> DisassemblyWidget::parseAddress(QString s) {
 namespace {
 
 std::unordered_map<Cpu, std::shared_ptr<Disassembler>> disassemblersPerCpu = {
-    { kCpu6502, std::make_shared<Disassembler6502>() },
-    { kCpuZ80, std::make_shared<DisassemblerZ80>() }
+    { Cpu::MOS6502, std::make_shared<Disassembler6502>() },
+    { Cpu::Z80, std::make_shared<DisassemblerZ80>() }
 };
 
 }

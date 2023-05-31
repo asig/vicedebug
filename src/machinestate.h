@@ -26,13 +26,22 @@
 
 namespace vicedebug {
 
-enum Cpu {
-    kCpu6502,
-    kCpuZ80,
+enum class Cpu {
+    MOS6502, // Well, not only... also 6510, 7501, 8501, 8502, ... Anything 6502 compatible.
+    Z80,
 };
 
 std::string cpuName(Cpu cpu);
 
+enum class System {
+    VIC20,
+    C16, // actually, the 264 series
+    C64,
+    C128,
+    PET,
+    SuperPET,
+};
+    
 struct Bank {
     std::uint16_t id;
     std::string name;       
@@ -58,6 +67,7 @@ struct Registers {
 };
 
 struct MachineState {
+    System system;
     std::unordered_map<std::uint16_t, std::vector<std::uint8_t>> memory;
     Registers regs;
     Cpu activeCpu;

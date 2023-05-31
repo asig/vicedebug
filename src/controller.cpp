@@ -19,6 +19,8 @@
 
 #include "controller.h"
 
+#include <set>
+
 #include <QFuture>
 
 namespace vicedebug {
@@ -68,10 +70,9 @@ MachineState Controller::getMachineState() {
 
     machineState.regs = registersFromResponse(registersResponse);
 
-    // TODO set active CPU if we're a C128
-    machineState.activeCpu = kCpu6502;
-    if (isC128_ && (machineState.memory[0][0xd505] & 1) == 0) {
-        machineState.activeCpu = kCpuZ80;
+    machineState.activeCpu = Cpu::MOS6502;
+    if (system_ == System::C128 && (machineState.memory[0][0xd505] & 1) == 0) {
+        machineState.activeCpu = Cpu::Z80;
     }
     machineState.availableCpus = availableCpus_;
 
@@ -107,15 +108,10 @@ void Controller::connectToVice(QString host, int port) {
         return b1.id < b2.id;
     });
 
-    isC128_ = false;
-    availableCpus_.clear();
-    availableCpus_.push_back(kCpu6502);
-    for (const auto& bank : availableBanks_) {
-        if (bank.name == "vdc") {
-            // Only the C128 has a "vdc" bank, and only the C128 has a Z80
-            availableCpus_.push_back(kCpuZ80);
-            isC128_ = true;
-        }
+    system_ = determineSystem();
+    availableCpus_.push_back(Cpu::MOS6502); // Every system has a 6502
+    if (system_ == System::C128) {
+        availableCpus_.push_back(Cpu::Z80);
     }
 
     auto checkpointListResponseFuture = viceClient_->checkpointList();
@@ -145,6 +141,30 @@ void Controller::connectToVice(QString host, int port) {
     MachineState machineState = getMachineState();
     ignoreStopped_ = true;
     emit connected(machineState, availableBanks_, breakpoints);
+}
+
+System Controller::determineSystem() const {
+    std::set<std::string> bankNames;
+    for (const auto& bank : availableBanks_) {
+        bankNames.emplace(bank.name);
+    }
+
+    if (bankNames.contains("vdc")) {
+        return System::C128;
+    }
+    if (bankNames.contains("6809")) {
+        return System::SuperPET;
+    }
+    if (bankNames.contains("extram")) {
+        return System::PET;
+    }
+    if (bankNames.contains("cart1rom")) {
+        return System::C16;
+    }
+    if (bankNames.contains("cart")) {
+        return System::C64;
+    }
+    return System::VIC20;
 }
 
 void Controller::disconnect() {
