@@ -173,6 +173,9 @@ System Controller::determineSystem() const {
     if (bankNames.contains("cart")) {
         return System::C64;
     }
+    if (bankNames.contains("ram0f")) {
+        return System::CBM_II;
+    }
     return System::VIC20;
 }
 

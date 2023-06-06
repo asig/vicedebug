@@ -40,6 +40,7 @@ enum class System {
     C128,
     PET,
     SuperPET,
+    CBM_II,
 };
     
 struct Bank {
