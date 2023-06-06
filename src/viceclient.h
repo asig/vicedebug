@@ -29,7 +29,7 @@
 
 namespace vicedebug {
 
-enum MemSpace {
+enum class MemSpace {
     MAIN_MEMORY,
     DRIVE8,
     DRIVE9,

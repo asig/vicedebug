@@ -104,6 +104,14 @@ void Controller::connectToVice(QString host, int port) {
         return;
     }
 
+    auto registersAvailableResponseFuture = viceClient_->registersAvailable(MemSpace::MAIN_MEMORY);
+    registersAvailableResponseFuture.waitForFinished();
+    auto registersAvailableResponse = registersAvailableResponseFuture.result();
+    qDebug() << "Available registers:";
+    for (const auto& p : registersAvailableResponse.regInfos) {
+        qDebug() << "    " << p.first << ": " << p.second.name.c_str() << " (" << p.second.bits << " bits)";
+    }
+
     auto banksAvailableResponseFuture = viceClient_->banksAvailable();
     banksAvailableResponseFuture.waitForFinished();
     auto banksAvailableResponse = banksAvailableResponseFuture.result();
@@ -190,7 +198,7 @@ void Controller::disconnect() {
 }
 
 void Controller::createBreakpoint(std::uint8_t op, std::uint16_t start, std::uint16_t end, bool enabled) {
-    auto checkpointSetFuture = viceClient_->checkpointSet(start, end, true, enabled, op, false, MAIN_MEMORY);
+    auto checkpointSetFuture = viceClient_->checkpointSet(start, end, true, enabled, op, false, MemSpace::MAIN_MEMORY);
     checkpointSetFuture.waitForFinished();
     auto checkpointSetResponse = checkpointSetFuture.result();
 
@@ -266,7 +274,7 @@ void Controller::updateRegisters(const Registers& registers) {
         {Registers::kRegFlagsId, registers.flags},
     };
 
-    auto registersSetResponseFuture = viceClient_->registersSet(MAIN_MEMORY, regs);
+    auto registersSetResponseFuture = viceClient_->registersSet(MemSpace::MAIN_MEMORY, regs);
     registersSetResponseFuture.waitForFinished();
     auto registersSetResponse = registersSetResponseFuture.result();
 
@@ -311,10 +319,10 @@ void Controller::resumeExecution() {
 
 void Controller::writeMemory(std::uint16_t bankId, std::uint16_t addr, std::uint8_t data) {
     std::vector<std::uint8_t> vals { data };
-    auto memSetResponseFuture = viceClient_->memSet(addr, MAIN_MEMORY, bankId, false, vals);
+    auto memSetResponseFuture = viceClient_->memSet(addr, MemSpace::MAIN_MEMORY, bankId, false, vals);
     memSetResponseFuture.waitForFinished();
 
-    auto memGetResponseFuture = viceClient_->memGet(addr, addr, MAIN_MEMORY, bankId, false);
+    auto memGetResponseFuture = viceClient_->memGet(addr, addr, MemSpace::MAIN_MEMORY, bankId, false);
     memGetResponseFuture.waitForFinished();
     auto memGetResponse = memGetResponseFuture.result();
 
