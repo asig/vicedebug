@@ -118,6 +118,7 @@ void Controller::connectToVice(QString host, int port) {
     });
 
     system_ = determineSystem();
+    availableCpus_.clear();
     availableCpus_.push_back(Cpu::MOS6502); // Every system has a 6502
     if (system_ == System::C128) {
         availableCpus_.push_back(Cpu::Z80);
