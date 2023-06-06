@@ -29,6 +29,7 @@
 
 #include "controller.h"
 #include "disassembler.h"
+#include "symtab.h"
 
 namespace vicedebug {
 
@@ -38,15 +39,14 @@ class DisassemblyWidget : public QWidget {
     Q_OBJECT
 
 public:
-    DisassemblyWidget(Controller* controller, QWidget* parent);
+    DisassemblyWidget(Controller* controller, SymTable* symtab, QWidget* parent);
     virtual ~DisassemblyWidget();
 
 signals:
     void cpuSelected(Cpu cpu);
 
-//public slots:
-//    void onConnected(const MachineState& machineState, const Banks& banks, const Breakpoints& breakpoints);
-//    void onDisconnected();
+public slots:
+    void onSymTabChanged();
 
 protected:
 //    void resizeEvent(QResizeEvent* event) override;
@@ -69,7 +69,7 @@ class DisassemblyContent : public QWidget {
     Q_OBJECT
 
 public:
-    DisassemblyContent(Controller* controller, QScrollArea* parent);
+    DisassemblyContent(Controller* controller, SymTable* symtab, QScrollArea* parent);
     virtual ~DisassemblyContent();
 
     void highlightLine(int line);
@@ -79,12 +79,15 @@ public:
         return pc_;
     }
 
+    void updateDisassembly();
+
 protected:
     QSize sizeHint() const override;
     void mousePressEvent(QMouseEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;
     void paintEvent(QPaintEvent* event) override;
 //    void resizeEvent(QResizeEvent* event) override;
+
 
 public slots:
     void onConnected(const MachineState& machineState, const Banks& banks, const Breakpoints& breakpoints);
@@ -98,7 +101,6 @@ public slots:
 
 private:
     void paintLine(QPainter& painter, const QRect& updateRect, int line);
-    void updateDisassembly();
 
     void enableControls(bool enable);
 
@@ -109,6 +111,10 @@ private:
     std::vector<std::uint8_t> memory_;
     std::uint16_t pc_;
     std::shared_ptr<Disassembler> disassembler_;
+
+    std::unordered_map<Cpu, std::shared_ptr<Disassembler>> disassemblersPerCpu_;
+
+    SymTable* symtab_;
 
     QScrollArea* scrollArea_;
 

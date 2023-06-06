@@ -33,8 +33,12 @@ class DisassemblerZ80Test: public QObject
 {
     Q_OBJECT
 
+public:
+    DisassemblerZ80Test() : disassembler_(&symtab_) {}
+
 private:
     std::vector<std::uint8_t> memory_;
+    SymTable symtab_;
     vicedebug::DisassemblerZ80 disassembler_;
 
     void verifyLine(const Disassembler::Line& line, std::uint16_t addr, std::vector<std::uint8_t> bytes, std::string disassembly) {
@@ -57,6 +61,7 @@ private:
 private slots:
 
     void testDisassembleForward_NoPrefix() {
+        auto symtab = SymTable();
         initMem(0x0400, { 0x00 });
         auto lines = disassembler_.disassembleForward(0x0400, memory_, 1);
         verifyLine(lines[0], 0x0400, { 0x00 }, "NOP");
@@ -816,6 +821,7 @@ private slots:
     }
 
     void testDisassembleForward_PrefixCB() {
+        auto symtab = SymTable();
         initMem(0x0400, { 0xCB,0x00 });
         auto lines = disassembler_.disassembleForward(0x0400, memory_, 1);
         verifyLine(lines[0], 0x0400, { 0xCB,0x00 }, "RLC B");
@@ -1587,6 +1593,7 @@ private slots:
     }
 
     void TestDisassembleForward_PrefixDD() {
+        auto symtab = SymTable();
         initMem(0x0400, { 0xDD,0x00 });
         auto lines = disassembler_.disassembleForward(0x0400, memory_, 1);
         verifyLine(lines[0], 0x0400, { 0xDD,0x00 }, "*NOP");
@@ -2355,6 +2362,7 @@ private slots:
     }
 
     void TestDisassembleForward_PrefixED() {
+        auto symtab = SymTable();
         initMem(0x0400, { 0xED,0x00 });
         auto lines = disassembler_.disassembleForward(0x0400, memory_, 1);
         verifyLine(lines[0], 0x0400, { 0xED,0x00 }, "*NOP");
@@ -3126,6 +3134,7 @@ private slots:
     }
 
     void TestDisassembleForward_PrefixFD() {
+        auto symtab = SymTable();
         initMem(0x0400, { 0xFD,0x00 });
         auto lines = disassembler_.disassembleForward(0x0400, memory_, 1);
         verifyLine(lines[0], 0x0400, { 0xFD,0x00 }, "*NOP");
@@ -3894,6 +3903,7 @@ private slots:
     }
 
     void TestDisassembleForward_PrefixDDCB() {
+        auto symtab = SymTable();
         initMem(0x0400, { 0xDD,0xCB,0x23,0x00 });
         auto lines = disassembler_.disassembleForward(0x0400, memory_, 1);
         verifyLine(lines[0], 0x0400, { 0xDD,0xCB,0x23,0x00 }, "*RLC (IX+$23), B");
@@ -4665,6 +4675,7 @@ private slots:
     }
 
     void TestDisassembleForward_PrefixFDCB() {
+        auto symtab = SymTable();
         initMem(0x0400, { 0xFD,0xCB,0x23,0x00 });
         auto lines = disassembler_.disassembleForward(0x0400, memory_, 1);
         verifyLine(lines[0], 0x0400, { 0xFD,0xCB,0x23,0x00 }, "*RLC (IY+$23), B");
@@ -5495,6 +5506,7 @@ CPU Z80
                 });
 
 
+        auto symtab = SymTable();
         auto lines = disassembler_.disassembleBackward(0x0147, memory_, 21, {});
         QVERIFY(lines.size() == 21);
 

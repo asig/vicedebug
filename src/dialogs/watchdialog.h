@@ -25,6 +25,7 @@
 
 #include "machinestate.h"
 #include "watches.h"
+#include "symtab.h"
 
 namespace vicedebug {
 
@@ -33,8 +34,8 @@ class WatchDialog : public QDialog
     Q_OBJECT
 
 public:
-    explicit WatchDialog(Banks banks, QWidget* parent);
-    explicit WatchDialog(Banks banks, Watch watch, QWidget* parent);
+    explicit WatchDialog(Banks banks, SymTable* symtab, QWidget* parent);
+    explicit WatchDialog(Banks banks, Watch watch, SymTable* symtab, QWidget* parent);
 
     Watch watch();
 
@@ -57,8 +58,8 @@ private:
     QPushButton* okBtn_;
     QPushButton* cancelBtn_;
 
+    SymTable* symtab_;
     Banks banks_;
-
     Watch watch_;
 };
 

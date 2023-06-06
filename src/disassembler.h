@@ -22,6 +22,9 @@
 #include <string>
 #include <vector>
 #include <cstdint>
+#include <memory>
+
+#include "symtab.h"
 
 namespace vicedebug {
 
@@ -33,6 +36,7 @@ public:
         std::string disassembly;
     };
 
+    explicit Disassembler(SymTable* symtab) : symtab_(symtab) {}
     virtual ~Disassembler() = default;
 
     virtual std::vector<Line> disassembleForward(std::uint16_t pos, const std::vector<std::uint8_t>& memory, int lines);
@@ -41,6 +45,8 @@ public:
 
 protected:
     virtual Line disassembleLine(std::uint16_t& pos, const std::vector<std::uint8_t>& memory) = 0;
+
+    SymTable* symtab_;
 };
 
 }

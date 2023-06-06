@@ -70,6 +70,15 @@ MachineState Controller::getMachineState() {
 
     machineState.regs = registersFromResponse(registersResponse);
 
+    // Determine "cpu" bank
+    for (const auto& p : availableBanks_) {
+        if (p.name == "cpu" || p.name == "default") {
+            machineState.cpuBankId = p.id;
+            break;
+        }
+    }
+
+    // Determine available CPUs and active CPU
     machineState.activeCpu = Cpu::MOS6502;
     if (system_ == System::C128 && (machineState.memory[0][0xd505] & 1) == 0) {
         machineState.activeCpu = Cpu::Z80;

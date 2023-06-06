@@ -28,8 +28,8 @@
 
 namespace vicedebug {
 
-WatchesWidget::WatchesWidget(Controller* controller, QWidget* parent) :
-    QGroupBox("Watches", parent), controller_(controller)
+WatchesWidget::WatchesWidget(Controller* controller, SymTable* symtab, QWidget* parent) :
+    symtab_(symtab), QGroupBox("Watches", parent), controller_(controller)
 {
     QStringList l;
 
@@ -166,7 +166,7 @@ void WatchesWidget::onTreeItemSelectionChanged() {
 void WatchesWidget::onTreeItemDoubleClicked(QTreeWidgetItem* item, int column) {
     int idx = item->data(0, Qt::UserRole).toInt();
     Watch w = watches_[idx];
-    WatchDialog dlg(banks_, w, this);
+    WatchDialog dlg(banks_, w, symtab_, this);
     int res = dlg.exec();
     if (res == QDialog::DialogCode::Accepted) {
         Watch modified = dlg.watch();
@@ -175,7 +175,7 @@ void WatchesWidget::onTreeItemDoubleClicked(QTreeWidgetItem* item, int column) {
 }
 
 void WatchesWidget::onAddClicked() {
-    WatchDialog dlg(banks_, this);
+    WatchDialog dlg(banks_, symtab_, this);
     int res = dlg.exec();
     if (res == QDialog::DialogCode::Accepted) {
         Watch w = dlg.watch();
@@ -194,5 +194,8 @@ void WatchesWidget::onRemoveClicked() {
     controller_->deleteWatch(watches_[idx].number);
 }
 
+void WatchesWidget::onSymTabChanged() {
+    // IMPLEMENT ME!
+}
 
 }

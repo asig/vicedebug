@@ -17,18 +17,22 @@
 - Breakpoint Widget
    - [ ] Tree branch controls are shown
 
-- Disassembly:
+- Disassembly:   
    - [X] Scrollbars not disabled at startup
    - [X] Backward disassembly for Z80 not working.
    - [ ] Backward disassembly needs to use disassembly hints from earlier forward disassembly
 
 # TODO
-
+- [X] Disassembly needs to use "cpu" or "default" bank.
 - [ ] Label support
       - [ ] in "Go to address" dropdown
       - [ ] in "add breakpoint" dialog
       - [ ] in "add watch" dialog
-
+- [ ] Expression parser for addresses: Available everywhere where an addr is needed, knows about symbols, dynamic
+- Symbol table:
+  [ ] Load
+  [ ] Edit
+  
 ## Disassembler Widget
 - [ ] Toolbar
       - [X] "Jump to address" box"
@@ -85,7 +89,7 @@
 - [X] Add register modification
 
 ## Other stuff
-- [ ] Derive system we're debugging from VICE resopnses
+- [X] Derive system we're debugging from VICE resopnses
 - [X] Use different colors for icons in toolbar menu
 - [ ] Add "Connect" and "Quick connect" menu
 - [X] Add About box

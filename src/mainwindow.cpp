@@ -29,8 +29,10 @@
 #include <QFuture>
 #include <QMessageBox>
 #include <QShortcut>
+#include <QFileDialog>
 
 #include "resources.h"
+#include "symtab.h"
 #include "dialogs/aboutdialog.h"
 #include "widgets/watcheswidget.h"
 #include "widgets/breakpointswidget.h"
@@ -91,10 +93,10 @@ void MainWindow::createActions() {
     connect(disconnectAction_, &QAction::triggered, this, &MainWindow::onDisconnectClicked);
 
     a = new QAction("Load symbols...");
-    loadSymbolsAction_ = a;
     a->setEnabled(true);
     a->setVisible(true);
-    connect(connectAction_, &QAction::triggered, this, &MainWindow::onLoadSymbolsClicked);
+    connect(a, &QAction::triggered, this, &MainWindow::onLoadSymbolsClicked);
+    loadSymbolsAction_ = a;
 
     emulatorRunning_ = false;
     a = new QAction(Resources::loadColoredIcon(kCol2, ":/images/codicons/debug-continue.svg"), tr("Continue"));
@@ -170,8 +172,8 @@ void MainWindow::createMenuBar() {
 
     fileMenu->addAction(connectAction_);
     fileMenu->addAction(disconnectAction_);
-//    fileMenu->addSeparator();
-//    fileMenu->addAction(loadSymbolsAction_);
+    fileMenu->addSeparator();
+    fileMenu->addAction(loadSymbolsAction_);
     fileMenu->addSeparator();
     fileMenu->addAction(tr("&Quit"), this, &QWidget::close);
 
@@ -240,8 +242,8 @@ void MainWindow::createMenuBar() {
 
 void MainWindow::createMainUI() {
     RegistersWidget* registersWidget = new RegistersWidget(controller_, this);
-    BreakpointsWidget* breakpointsWidget = new BreakpointsWidget(controller_, this);
-    WatchesWidget* watchesWidget = new WatchesWidget(controller_, this);
+    BreakpointsWidget* breakpointsWidget = new BreakpointsWidget(controller_, &symtab_, this);
+    WatchesWidget* watchesWidget = new WatchesWidget(controller_, &symtab_, this);
 
     QSplitter* lowerPart = new QSplitter(Qt::Horizontal);
     lowerPart->addWidget(registersWidget);
@@ -254,7 +256,7 @@ void MainWindow::createMainUI() {
 
 
     memoryWidget_ = new MemoryWidget(controller_, this);
-    DisassemblyWidget* disassembly = new DisassemblyWidget(controller_, this);
+    DisassemblyWidget* disassembly = new DisassemblyWidget(controller_, &symtab_, this);
 
     QSplitter* upperPart = new QSplitter(Qt::Horizontal);
     upperPart->addWidget(disassembly);
@@ -284,7 +286,12 @@ void MainWindow::onDisconnectClicked() {
 }
 
 void MainWindow::onLoadSymbolsClicked() {
-    // TODO(implement me!)
+    auto fileName = QFileDialog::getOpenFileName(this,
+        tr("Load symbol file"), "", tr("Symbol files (*.sym);; All files (*.*)")).toStdString();
+
+    if (symtab_.loadFromFile(fileName)) {
+        emit symTableChanged();
+    }    
 }
 
 void MainWindow::onStepInClicked() {

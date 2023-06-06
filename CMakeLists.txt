@@ -75,6 +75,8 @@ set(PROJECT_SOURCES
         src/focuswatcher.cpp
         src/tooltipgenerators.h
         src/tooltipgenerators.cpp
+        src/symtab.h
+        src/symtab.cpp
         src/main.cpp
 )
 

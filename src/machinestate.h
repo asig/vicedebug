@@ -68,6 +68,7 @@ struct Registers {
 
 struct MachineState {
     System system;
+    std::uint16_t cpuBankId;
     std::unordered_map<std::uint16_t, std::vector<std::uint8_t>> memory;
     Registers regs;
     Cpu activeCpu;

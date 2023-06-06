@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Andreas Signer <asigner@gmail.com>
+ * Copyright (c) 2023 Andreas Signer <asigner@gmail.com>
  *
  * This file is part of vicedebug.
  *
@@ -20,20 +20,24 @@
 #pragma once
 
 #include <string>
-#include <vector>
-#include <cstdint>
-
-#include "disassembler.h"
+#include <memory>
+#include <unordered_map>
 
 namespace vicedebug {
 
-class DisassemblerZ80 : public Disassembler {
+class SymTable {
 public:
-    DisassemblerZ80(SymTable* symtab) : Disassembler(symtab) {}
-    std::vector<Line> disassembleBackward(std::uint16_t pos, const std::vector<std::uint8_t>& memory, int lines, const std::vector<Line>& disassemblyHint) override;
+    SymTable() = default;
+    ~SymTable() = default;
 
-protected:
-    Line disassembleLine(std::uint16_t& pos, const std::vector<std::uint8_t>& memory) override;
+    bool loadFromFile(const std::string filename);
+
+    bool hasLabelForAddress(std::uint16_t addr) const;
+    std::string labelForAddress(std::uint16_t addr);
+
+    void dump();
+private:
+    std::unordered_map<std::uint16_t, std::string> symtable_;
 };
 
 }

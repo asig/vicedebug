@@ -32,8 +32,12 @@ class Disassembler6502Test: public QObject
 {
     Q_OBJECT
 
+public:
+    Disassembler6502Test() : disassembler_(&symtab_) {}
+
 private:
     std::vector<std::uint8_t> memory_;
+    SymTable symtab_;
     vicedebug::Disassembler6502 disassembler_;
 
     void verifyLine(const Disassembler::Line& line, std::uint16_t addr, std::vector<std::uint8_t> bytes, std::string disassembly) {

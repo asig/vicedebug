@@ -27,6 +27,7 @@
 #include "widgets/disassemblywidget.h"
 #include "widgets/memorywidget.h"
 #include "controller.h"
+#include "symtab.h"
 
 namespace vicedebug {
 
@@ -37,6 +38,9 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(Controller* controller, QWidget *parent);
     ~MainWindow();
+
+signals:
+    void symTableChanged();
 
 private slots:
     // Action slots
@@ -66,6 +70,8 @@ private:
     void createMainUI();
 
     void updateDebugControlButtons();
+
+    SymTable symtab_;
 
     MemoryWidget* memoryWidget_;
 

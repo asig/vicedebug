@@ -28,12 +28,12 @@
 
 namespace vicedebug {
 
-BreakpointDialog::BreakpointDialog(QWidget* parent) : QDialog(parent) {
+BreakpointDialog::BreakpointDialog(SymTable *symtab, QWidget* parent) : symtab_(symtab), QDialog(parent) {
     setupUI();
     setWindowTitle("Add breakpoint...");
 }
 
-BreakpointDialog::BreakpointDialog(Breakpoint breakpoint, QWidget* parent) : QDialog(parent) {
+BreakpointDialog::BreakpointDialog(Breakpoint breakpoint, SymTable *symtab, QWidget* parent) : symtab_(symtab), QDialog(parent) {
     setupUI();
     addrStart_->setText(QString::asprintf("%04X", breakpoint.addrStart));
     addrEnd_->setText(breakpoint.addrEnd == breakpoint.addrStart ? "" : QString::asprintf("%04X", breakpoint.addrEnd));

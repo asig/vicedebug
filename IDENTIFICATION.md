@@ -52,3 +52,27 @@ Available banks:
      3 :  io
      4 :  extram
      5 :  6809
+     
+#CBM-II
+Available banks:
+     0 :  ram00
+     1 :  ram01
+     2 :  ram02
+     3 :  ram03
+     4 :  ram04
+     5 :  ram05
+     6 :  ram06
+     7 :  ram07
+     8 :  ram08
+     9 :  ram09
+     10 :  ram0a
+     11 :  ram0b
+     12 :  ram0c
+     13 :  ram0d
+     14 :  ram0e
+     15 :  ram0f
+     16 :  io
+     17 :  cpu
+     
+
+

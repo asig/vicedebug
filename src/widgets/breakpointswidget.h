@@ -27,6 +27,7 @@
 #include <QToolButton>
 
 #include "controller.h"
+#include "symtab.h"
 
 namespace vicedebug {
 
@@ -41,7 +42,7 @@ class BreakpointsWidget : public QGroupBox
     };
 
 public:
-    BreakpointsWidget(Controller* controller, QWidget* parent);
+    BreakpointsWidget(Controller* controller, SymTable* symtab, QWidget* parent);
     ~BreakpointsWidget();
 
 public slots:
@@ -50,6 +51,7 @@ public slots:
     void onExecutionResumed();
     void onExecutionPaused(const MachineState& machineState);
     void onBreakpointsChanged(const Breakpoints& breakpoints);
+    void onSymTabChanged(std::shared_ptr<SymTable> symTable);
 
 private slots:
     void onTreeItemSelectionChanged();
@@ -67,6 +69,7 @@ private:
 
     Breakpoints breakpoints_;
     Controller* controller_;
+    SymTable* symtab_;
 
     QTreeWidget* tree_;
     QToolButton* addBtn_;

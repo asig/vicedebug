@@ -29,14 +29,14 @@
 
 namespace vicedebug {
 
-WatchDialog::WatchDialog(Banks banks, QWidget* parent)
-    : banks_(banks), QDialog(parent) {
+WatchDialog::WatchDialog(Banks banks, SymTable *symtab, QWidget* parent)
+    : banks_(banks), symtab_(symtab), QDialog(parent) {
     setupUI();
     setWindowTitle("Add watch...");
 }
 
-WatchDialog::WatchDialog(Banks banks, Watch watch, QWidget* parent)
-    : banks_(banks), QDialog(parent) {
+WatchDialog::WatchDialog(Banks banks, Watch watch, SymTable* symtab, QWidget* parent)
+    : banks_(banks), symtab_(symtab), QDialog(parent) {
     setupUI();
 
     addrStart_->setText(QString::asprintf("%04X", watch.addrStart));

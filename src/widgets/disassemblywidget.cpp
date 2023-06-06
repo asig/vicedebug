@@ -58,7 +58,7 @@ QColor kBreakpointFgDisabled = QColor(Qt::lightGray).lighter(80);
 
 }
 
-DisassemblyWidget::DisassemblyWidget(Controller* controller, QWidget* parent) :
+DisassemblyWidget::DisassemblyWidget(Controller* controller, SymTable* symtab, QWidget* parent) :
     QWidget(parent), controller_(controller) {
 
     connect(controller_, &Controller::connected, this, [this](const MachineState& machineState) {
@@ -84,7 +84,7 @@ DisassemblyWidget::DisassemblyWidget(Controller* controller, QWidget* parent) :
 
     // Set up disassembly content
     scrollArea_ = new QScrollArea(this);
-    content_ = new DisassemblyContent(controller_, scrollArea_);
+    content_ = new DisassemblyContent(controller_, symtab, scrollArea_);
     connect(this, &DisassemblyWidget::cpuSelected, content_, &DisassemblyContent::onCpuChanged);
     scrollArea_->setWidgetResizable(true);
     scrollArea_->setWidget(content_);
@@ -141,6 +141,11 @@ DisassemblyWidget::DisassemblyWidget(Controller* controller, QWidget* parent) :
 DisassemblyWidget::~DisassemblyWidget() {
 }
 
+void DisassemblyWidget::onSymTabChanged() {
+    content_->updateDisassembly();
+    content_->update();
+}
+
 // Move this into a util function
 std::optional<std::uint16_t> DisassemblyWidget::parseAddress(QString s) {
     s = s.trimmed().toLower();
@@ -163,18 +168,12 @@ std::optional<std::uint16_t> DisassemblyWidget::parseAddress(QString s) {
 //
 // ------------------------------------------------------------
 
-namespace {
+DisassemblyContent::DisassemblyContent(Controller* controller, SymTable* symtab, QScrollArea* parent) :
+    QWidget(parent), symtab_(symtab), controller_(controller), mouseDown_(false), highlightedLine_(-1), scrollArea_(parent), pc_(0) {
 
-std::unordered_map<Cpu, std::shared_ptr<Disassembler>> disassemblersPerCpu = {
-    { Cpu::MOS6502, std::make_shared<Disassembler6502>() },
-    { Cpu::Z80, std::make_shared<DisassemblerZ80>() }
-};
+    disassemblersPerCpu_[Cpu::MOS6502] = std::make_shared<Disassembler6502>(symtab);
+    disassemblersPerCpu_[Cpu::Z80] = std::make_shared<DisassemblerZ80>(symtab);
 
-}
-
-DisassemblyContent::DisassemblyContent(Controller* controller, QScrollArea* parent) :
-    QWidget(parent), controller_(controller), mouseDown_(false), highlightedLine_(-1), scrollArea_(parent), pc_(0)
-{
     setFont(Resources::robotoMonoFont());
 
     // Compute the size of the widget:
@@ -346,9 +345,9 @@ void DisassemblyContent::enableControls(bool enable) {
 
 void DisassemblyContent::onConnected(const MachineState& machineState, const Banks& banks, const Breakpoints& breakpoints) {
     qDebug() << "DisassemblyWidget::onConnected called";
-    memory_ = machineState.memory.at(0); // default bank
+    memory_ = machineState.memory.at(machineState.cpuBankId);
     pc_ = machineState.regs.pc;
-    disassembler_ = disassemblersPerCpu[machineState.activeCpu];
+    disassembler_ = disassemblersPerCpu_[machineState.activeCpu];
     updateDisassembly();
     onBreakpointsChanged(breakpoints);
     enableControls(true);
@@ -369,7 +368,7 @@ void DisassemblyContent::onExecutionResumed() {
 
 void DisassemblyContent::onExecutionPaused(const MachineState& machineState) {
     qDebug() << "DisassemblyWidget::onExecutionPaused called";
-    memory_ = machineState.memory.at(0); // default bank
+    memory_ = machineState.memory.at(machineState.cpuBankId);
     pc_ = machineState.regs.pc;
     updateDisassembly();
     update();
@@ -392,7 +391,7 @@ void DisassemblyContent::onRegistersChanged(const Registers& registers) {
 
 void DisassemblyContent::onCpuChanged(Cpu cpu) {
     qDebug() << "DisassemblyWidget::onCpuChanged called";
-    disassembler_ = disassemblersPerCpu[cpu];
+    disassembler_ = disassemblersPerCpu_[cpu];
     updateDisassembly();
     update();
 }
@@ -445,10 +444,5 @@ void DisassemblyContent::onMemoryChanged(std::uint16_t bankId, std::uint16_t add
     updateDisassembly();
     update();
 }
-
-
-
-
-
 
 }

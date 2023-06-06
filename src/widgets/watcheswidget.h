@@ -25,6 +25,7 @@
 
 #include "controller.h"
 #include "watches.h"
+#include "symtab.h"
 
 namespace vicedebug {
 
@@ -33,8 +34,11 @@ class WatchesWidget : public QGroupBox
     Q_OBJECT
 
 public:
-    explicit WatchesWidget(Controller* controller, QWidget* parent);
+    explicit WatchesWidget(Controller* controller, SymTable* symtab, QWidget* parent);
     ~WatchesWidget();
+
+public slots:
+    void onSymTabChanged();
 
 private slots:
     void onTreeItemSelectionChanged();
@@ -61,6 +65,7 @@ private:
     Watches watches_;
     std::unordered_map<std::uint16_t, std::vector<std::uint8_t>> memory_;
     Banks banks_;
+    SymTable *symtab_;
 
     QTreeWidget* tree_;
     QToolButton* addBtn_;

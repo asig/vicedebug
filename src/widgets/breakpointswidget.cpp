@@ -31,8 +31,8 @@
 
 namespace vicedebug {
 
-BreakpointsWidget::BreakpointsWidget(Controller* controller, QWidget* parent) :
-    QGroupBox("Breakpoints", parent), controller_(controller)
+BreakpointsWidget::BreakpointsWidget(Controller* controller, SymTable* symtab, QWidget* parent) :
+    QGroupBox("Breakpoints", parent), controller_(controller), symtab_(symtab)
 {
     QStringList l;
 
@@ -153,6 +153,10 @@ void BreakpointsWidget::onBreakpointsChanged(const Breakpoints& breakpoints) {
     fillTree(breakpoints);
 }
 
+void BreakpointsWidget::onSymTabChanged(std::shared_ptr<SymTable>) {
+    // IMPLEMENT ME!
+}
+
 void BreakpointsWidget::onTreeItemSelectionChanged() {
     auto selectedItems = tree_->selectedItems();
     removeBtn_->setEnabled(selectedItems.size() == 1);
@@ -177,7 +181,7 @@ void BreakpointsWidget::onTreeItemChanged(QTreeWidgetItem* item, int column) {
 void BreakpointsWidget::onTreeItemDoubleClicked(QTreeWidgetItem* item, int column) {
     qDebug() << "Entering onTreeItemDoubleClicked()";
     Breakpoint bp = breakpoints_[item->data(0, Qt::UserRole).toInt()];
-    BreakpointDialog dlg(bp, this);
+    BreakpointDialog dlg(bp, symtab_, this);
     int res = dlg.exec();
     if (res == QDialog::DialogCode::Accepted) {
         Breakpoint modifiedBp = dlg.breakpoint();
@@ -189,7 +193,7 @@ void BreakpointsWidget::onTreeItemDoubleClicked(QTreeWidgetItem* item, int colum
 }
 
 void BreakpointsWidget::onAddClicked() {
-    BreakpointDialog dlg(this);
+    BreakpointDialog dlg(symtab_, this);
     int res = dlg.exec();
     if (res == QDialog::DialogCode::Accepted) {
         Breakpoint bp = dlg.breakpoint();

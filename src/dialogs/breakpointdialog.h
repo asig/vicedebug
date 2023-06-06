@@ -24,6 +24,7 @@
 #include <QCheckBox>
 
 #include "breakpoints.h"
+#include "symtab.h"
 
 namespace vicedebug {
 
@@ -32,8 +33,8 @@ class BreakpointDialog : public QDialog
     Q_OBJECT
 
 public:
-    explicit BreakpointDialog(QWidget* parent);
-    explicit BreakpointDialog(Breakpoint bp, QWidget* parent);
+    explicit BreakpointDialog(SymTable* symtab, QWidget* parent);
+    explicit BreakpointDialog(Breakpoint bp, SymTable* symtab, QWidget* parent);
 
     Breakpoint breakpoint();
 
@@ -53,6 +54,7 @@ private:
     QPushButton* cancelBtn_;
 
     Breakpoint bp_;
+    SymTable* symtab_;
 };
 
 }

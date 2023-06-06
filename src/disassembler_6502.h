@@ -29,6 +29,7 @@ namespace vicedebug {
 
 class Disassembler6502 : public Disassembler {
 public:
+    Disassembler6502(SymTable* symtab) : Disassembler(symtab) {}
     virtual std::vector<Line> disassembleBackward(std::uint16_t pos, const std::vector<std::uint8_t>& memory, int lines, const std::vector<Disassembler::Line>& disassemblyHint) override;
 
 protected:
