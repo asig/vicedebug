@@ -99,6 +99,7 @@
 - [X] Support Z80 for Commodore 128
       - [X] Disassembler
       - [X] Figure out when Z80 is active
+      - [ ] Handle Z80 registers!
 - [ ] Support CPU jams
 
 ## Make it look good
