@@ -25,6 +25,32 @@
 
 namespace vicedebug {
 
+namespace {
+  // 6502 regs
+  constexpr static const std::uint8_t kRegAId = 0;
+  constexpr static const std::uint8_t kRegXId = 1;
+  constexpr static const std::uint8_t kRegYId = 2;
+  constexpr static const std::uint8_t kRegFlagsId = 5;
+
+  // Z80 regs
+  constexpr static const std::uint8_t kRegAFId = 6;
+  constexpr static const std::uint8_t kRegBCId = 7;
+  constexpr static const std::uint8_t kRegDEId = 8;
+  constexpr static const std::uint8_t kRegHLId = 9;
+  constexpr static const std::uint8_t kRegIXId = 10;
+  constexpr static const std::uint8_t kRegIYId = 11;
+  constexpr static const std::uint8_t kRegIId = 12;
+  constexpr static const std::uint8_t kRegRId = 13;
+  constexpr static const std::uint8_t kRegAFPrimeId = 14;
+  constexpr static const std::uint8_t kRegBCPrimeId = 15;
+  constexpr static const std::uint8_t kRegDEPrimtId = 16;
+  constexpr static const std::uint8_t kRegHLPrimeId = 17;
+
+  // common regs
+  constexpr static const std::uint8_t kRegPCId = 3;
+  constexpr static const std::uint8_t kRegSPId = 4;
+}
+
 Controller::Controller(ViceClient* viceClient)
     : viceClient_(viceClient),
       connected_(false),
@@ -35,14 +61,44 @@ Controller::Controller(ViceClient* viceClient)
     connect(viceClient_, &ViceClient::resumedResponseReceived, this, &Controller::onResumedReceived);
 }
 
+namespace {
+
+inline static void maybeRegisterFromRespsonse(const RegistersResponse& response, std::uint8_t viceRegId, Registers& regs, Registers::ID reg) {
+    if (response.values.contains(viceRegId)) {
+//        auto a = ;
+        regs[reg] = response.values.at(viceRegId);
+    }
+}
+
+}
+
 Registers Controller::registersFromResponse(RegistersResponse response) const {
     Registers regs;
-    regs.a = response.values[Registers::kRegAId];
-    regs.x = response.values[Registers::kRegXId];
-    regs.y = response.values[Registers::kRegYId];
-    regs.flags = response.values[Registers::kRegFlagsId];
-    regs.pc = response.values[Registers::kRegPCId];
-    regs.sp = response.values[Registers::kRegSPId];
+
+    // 6502 regs
+    maybeRegisterFromRespsonse(response, kRegAId, regs, Registers::A);
+    maybeRegisterFromRespsonse(response, kRegXId, regs, Registers::X);
+    maybeRegisterFromRespsonse(response, kRegYId, regs, Registers::Y);
+    maybeRegisterFromRespsonse(response, kRegFlagsId, regs, Registers::Flags);
+
+    // Z80 regs
+    maybeRegisterFromRespsonse(response, kRegAFId, regs, Registers::AF);
+    maybeRegisterFromRespsonse(response, kRegBCId, regs, Registers::BC);
+    maybeRegisterFromRespsonse(response, kRegDEId, regs, Registers::DE);
+    maybeRegisterFromRespsonse(response, kRegHLId, regs, Registers::HL);
+    maybeRegisterFromRespsonse(response, kRegIXId, regs, Registers::IX);
+    maybeRegisterFromRespsonse(response, kRegIYId, regs, Registers::IY);
+    maybeRegisterFromRespsonse(response, kRegIId, regs, Registers::I);
+    maybeRegisterFromRespsonse(response, kRegRId, regs, Registers::R);
+    maybeRegisterFromRespsonse(response, kRegAFPrimeId, regs, Registers::AFPrime);
+    maybeRegisterFromRespsonse(response, kRegBCPrimeId, regs, Registers::BCPrime);
+    maybeRegisterFromRespsonse(response, kRegDEPrimtId, regs, Registers::DEPrime);
+    maybeRegisterFromRespsonse(response, kRegHLPrimeId, regs, Registers::HLPrime);
+
+    // Common regs
+    maybeRegisterFromRespsonse(response, kRegPCId, regs, Registers::PC);
+    maybeRegisterFromRespsonse(response, kRegSPId, regs, Registers::SP);
+
     return regs;
 }
 
@@ -140,7 +196,7 @@ void Controller::connectToVice(QString host, int port) {
     breakpoints_.clear();
     // It looks like as of 2023-01-24, VICE head is returning breakpoints multiple time,
     // so we need to filter them.
-    // TODO(asigner): Look into VICE to verify this.
+    // Patch submitted to VICE: https://sourceforge.net/p/vice-emu/patches/354/
     Breakpoints breakpoints;
     for (auto cp : checkpointListResponse.checkpoints) {
         Breakpoint bp;
@@ -264,15 +320,53 @@ void Controller::deleteWatch(std::uint32_t number) {
     qWarning() << "deleteWatch: No watch found with number " << number << "!";
 }
 
+namespace {
+
+inline static void maybeRegisterToRequest(const std::set<std::uint8_t>& availableRegs, const Registers& regs, Registers::ID regId, std::map<std::uint8_t, std::uint16_t>& viceRegs, std::uint8_t viceRegId) {
+    if (availableRegs.contains(viceRegId) && regs.contains(regId)) {
+        viceRegs[viceRegId] = regs[regId];
+    }
+}
+
+}
+
 void Controller::updateRegisters(const Registers& registers) {
-    std::map<std::uint8_t, std::uint16_t> regs = {
-        {Registers::kRegAId, registers.a},
-        {Registers::kRegXId, registers.x},
-        {Registers::kRegYId, registers.y},
-        {Registers::kRegSPId, registers.sp},
-        {Registers::kRegPCId, registers.pc},
-        {Registers::kRegFlagsId, registers.flags},
-    };
+
+    // VICE really does not like it if we set registers that it doesn't currently support.
+    // To ensure we don't set bad regs, we first ask for registers info and filter by it.
+    auto registersAvailableResponseFuture = viceClient_->registersAvailable(MemSpace::MAIN_MEMORY);
+    registersAvailableResponseFuture.waitForFinished();
+    auto registersAvailableResponse = registersAvailableResponseFuture.result();
+    std::set<std::uint8_t> availableRegs;
+    for (const auto& p : registersAvailableResponse.regInfos) {
+        availableRegs.insert(p.first);
+    }
+
+    std::map<std::uint8_t, std::uint16_t> regs;
+
+    // 6502 regs
+    maybeRegisterToRequest(availableRegs, registers, Registers::A, regs, kRegAId);
+    maybeRegisterToRequest(availableRegs, registers, Registers::X, regs, kRegXId);
+    maybeRegisterToRequest(availableRegs, registers, Registers::Y, regs, kRegYId);
+    maybeRegisterToRequest(availableRegs, registers, Registers::Flags, regs, kRegFlagsId);
+
+    // Z80 regs
+    maybeRegisterToRequest(availableRegs, registers, Registers::AF, regs, kRegAFId);
+    maybeRegisterToRequest(availableRegs, registers, Registers::BC, regs, kRegBCId);
+    maybeRegisterToRequest(availableRegs, registers, Registers::DE, regs, kRegDEId);
+    maybeRegisterToRequest(availableRegs, registers, Registers::HL, regs, kRegHLId);
+    maybeRegisterToRequest(availableRegs, registers, Registers::IX, regs, kRegIXId);
+    maybeRegisterToRequest(availableRegs, registers, Registers::IY, regs, kRegIYId);
+    maybeRegisterToRequest(availableRegs, registers, Registers::I, regs, kRegIId);
+    maybeRegisterToRequest(availableRegs, registers, Registers::R, regs, kRegRId);
+    maybeRegisterToRequest(availableRegs, registers, Registers::AFPrime, regs, kRegAFPrimeId);
+    maybeRegisterToRequest(availableRegs, registers, Registers::BCPrime, regs, kRegBCPrimeId);
+    maybeRegisterToRequest(availableRegs, registers, Registers::DEPrime, regs, kRegDEPrimtId);
+    maybeRegisterToRequest(availableRegs, registers, Registers::HLPrime, regs, kRegHLPrimeId);
+
+    // Common regs
+    maybeRegisterToRequest(availableRegs, registers, Registers::SP, regs, kRegSPId);
+    maybeRegisterToRequest(availableRegs, registers, Registers::PC, regs, kRegPCId);
 
     auto registersSetResponseFuture = viceClient_->registersSet(MemSpace::MAIN_MEMORY, regs);
     registersSetResponseFuture.waitForFinished();

@@ -126,20 +126,21 @@ void RegistersWidget::clearControls() {
 }
 
 void RegistersWidget::fillControls() {
-    a_->setText(QString::asprintf("%02x",regs_.a));
-    x_->setText(QString::asprintf("%02x",regs_.x));
-    y_->setText(QString::asprintf("%02x",regs_.y));
-    sp_->setText(QString::asprintf("%02x",regs_.sp));
-    pc_->setText(QString::asprintf("%04x",regs_.pc));
-    QString flags = "";
+    a_->setText(QString::asprintf("%02x",regs_[Registers::A]));
+    x_->setText(QString::asprintf("%02x",regs_[Registers::X]));
+    y_->setText(QString::asprintf("%02x",regs_[Registers::Y]));
+    sp_->setText(QString::asprintf("%02x",regs_[Registers::SP]));
+    pc_->setText(QString::asprintf("%04x",regs_[Registers::PC]));
+    auto flags = regs_[Registers::Flags];
+    QString flagsStr = "";
     for (int m = 128; m > 0; m >>= 1) {
         if (m == 32) {
-            flags += "-";
+            flagsStr += "-";
             continue;
         }
-        flags += (regs_.flags & m) > 0 ? "1" : "0";
+        flagsStr += (flags & m) > 0 ? "1" : "0";
     }
-    flags_->setText(flags);
+    flags_->setText(flagsStr);
 }
 
 uint16_t parseInt(QLineEdit* edit, int oldVal, int maxVal) {
@@ -153,11 +154,11 @@ uint16_t parseInt(QLineEdit* edit, int oldVal, int maxVal) {
 
 void RegistersWidget::onFocusLost() {
     bool ok;
-    std::uint8_t newA = (std::uint8_t)parseInt(a_, regs_.a, 0xff);
-    std::uint8_t newX = (std::uint8_t)parseInt(x_, regs_.x, 0xff);
-    std::uint8_t newY = (std::uint8_t)parseInt(y_, regs_.y, 0xff);
-    std::uint8_t newSP = (std::uint8_t)parseInt(sp_, regs_.sp, 0xff);
-    std::uint16_t newPC = (std::uint16_t)parseInt(pc_, regs_.pc, 0xffff);
+    std::uint8_t newA = (std::uint8_t)parseInt(a_, regs_[Registers::A], 0xff);
+    std::uint8_t newX = (std::uint8_t)parseInt(x_, regs_[Registers::X], 0xff);
+    std::uint8_t newY = (std::uint8_t)parseInt(y_, regs_[Registers::Y], 0xff);
+    std::uint8_t newSP = (std::uint8_t)parseInt(sp_, regs_[Registers::SP], 0xff);
+    std::uint16_t newPC = (std::uint16_t)parseInt(pc_, regs_[Registers::PC], 0xffff);
     std::uint8_t newFlags = 0;
     int mask = 128;
     auto flagsStr = flags_->text().toStdString();
@@ -171,16 +172,16 @@ void RegistersWidget::onFocusLost() {
         }
     } else {
         // Not valid string
-        newFlags = regs_.flags;
+        newFlags = regs_[Registers::Flags];
     }
 
     bool dirty = false;
-    if (newA != regs_.a) { regs_.a = newA; dirty = true; }
-    if (newX != regs_.x) { regs_.x = newX; dirty = true; }
-    if (newY != regs_.y) { regs_.y = newY; dirty = true; }
-    if (newSP != regs_.sp) { regs_.sp = newSP; dirty = true; }
-    if (newPC != regs_.pc) { regs_.pc = newPC; dirty = true; }
-    if (newFlags != regs_.flags) { regs_.flags = newFlags; dirty = true; }
+    if (newA != regs_[Registers::A]) { regs_[Registers::A] = newA; dirty = true; }
+    if (newX != regs_[Registers::X]) { regs_[Registers::X] = newX; dirty = true; }
+    if (newY != regs_[Registers::Y]) { regs_[Registers::Y] = newY; dirty = true; }
+    if (newSP != regs_[Registers::SP]) { regs_[Registers::SP] = newSP; dirty = true; }
+    if (newPC != regs_[Registers::PC]) { regs_[Registers::PC] = newPC; dirty = true; }
+    if (newFlags != regs_[Registers::Flags]) { regs_[Registers::Flags] = newFlags; dirty = true; }
 
     if (dirty) {
         controller_->updateRegisters(regs_);

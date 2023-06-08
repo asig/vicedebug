@@ -346,7 +346,7 @@ void DisassemblyContent::enableControls(bool enable) {
 void DisassemblyContent::onConnected(const MachineState& machineState, const Banks& banks, const Breakpoints& breakpoints) {
     qDebug() << "DisassemblyWidget::onConnected called";
     memory_ = machineState.memory.at(machineState.cpuBankId);
-    pc_ = machineState.regs.pc;
+    pc_ = machineState.regs[Registers::PC];
     disassembler_ = disassemblersPerCpu_[machineState.activeCpu];
     updateDisassembly();
     onBreakpointsChanged(breakpoints);
@@ -369,7 +369,7 @@ void DisassemblyContent::onExecutionResumed() {
 void DisassemblyContent::onExecutionPaused(const MachineState& machineState) {
     qDebug() << "DisassemblyWidget::onExecutionPaused called";
     memory_ = machineState.memory.at(machineState.cpuBankId);
-    pc_ = machineState.regs.pc;
+    pc_ = machineState.regs[Registers::PC];
     updateDisassembly();
     update();
     enableControls(true);
@@ -386,7 +386,7 @@ void DisassemblyContent::onBreakpointsChanged(const Breakpoints& breakpoints) {
 }
 
 void DisassemblyContent::onRegistersChanged(const Registers& registers) {
-    highlightLine(addressToLine_[registers.pc]);
+    highlightLine(addressToLine_[registers[Registers::PC]]);
 }
 
 void DisassemblyContent::onCpuChanged(Cpu cpu) {

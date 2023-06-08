@@ -189,6 +189,11 @@ QFuture<RegistersResponse> ViceClient::registersSet(MemSpace memSpace, std::map<
     auto res = promise->future();
     ResponseSetter* responseSetter = new ResponseSetterImpl<RegistersResponse>(connectionWorker_, promise);
 
+    qDebug() << "Sending REGISTERS_SET:";
+    for(const auto& p : values) {
+        qDebug() << "  reg " << p.first << " = " << p.second;
+    }
+
     std::vector<std::uint8_t> body;
     body << (std::uint8_t)memSpace
          << (std::uint16_t)values.size();

@@ -51,20 +51,48 @@ struct Bank {
 typedef std::vector<Bank> Banks;
 typedef std::vector<Cpu> Cpus;
 
-struct Registers {
-    constexpr static const std::uint8_t kRegAId = 0;
-    constexpr static const std::uint8_t kRegXId = 1;
-    constexpr static const std::uint8_t kRegYId = 2;
-    constexpr static const std::uint8_t kRegPCId = 3;
-    constexpr static const std::uint8_t kRegSPId = 4;
-    constexpr static const std::uint8_t kRegFlagsId = 5;
+class Registers {
+public:
+    enum ID {
+        // 6502 regs
+        A,
+        X,
+        Y,
+        Flags,
 
-    std::uint8_t a;
-    std::uint8_t x;
-    std::uint8_t y;
-    std::uint8_t flags;
-    std::uint8_t sp;
-    std::uint16_t pc;
+        // Z80 regs
+        AF,
+        BC,
+        DE,
+        HL,
+        IX,
+        IY,
+        I,
+        R,
+        AFPrime,
+        BCPrime,
+        DEPrime,
+        HLPrime,
+
+        // Common regs
+        PC,
+        SP
+    };
+
+    bool contains(ID id) const {
+        return values.contains(id);
+    }
+
+    std::uint16_t operator[](ID id) const {
+        return values[id];
+    }
+
+    std::uint16_t& operator[](ID id) {
+        return values[id];
+    }
+
+private:
+    mutable std::unordered_map<ID, std::uint16_t> values;
 };
 
 struct MachineState {
