@@ -23,9 +23,9 @@
 
 namespace vicedebug {
 
-class FocusWatcher : public QObject
-{
+class FocusWatcher : public QObject {
     Q_OBJECT
+
 public:
     explicit FocusWatcher(QObject *parent = nullptr);
     virtual bool eventFilter(QObject *obj, QEvent *event) override;
