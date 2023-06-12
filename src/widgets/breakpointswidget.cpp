@@ -104,9 +104,7 @@ void BreakpointsWidget::addItem(int bpIdx) {
 }
 
 void BreakpointsWidget::enableControls(bool enable) {
-    tree_->setEnabled(enable);
-    addBtn_->setEnabled(enable);
-    removeBtn_->setEnabled(tree_->selectedItems().size() == 1);
+    this->setEnabled(enable);
 }
 
 void BreakpointsWidget::clearTree() {
