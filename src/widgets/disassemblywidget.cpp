@@ -79,8 +79,16 @@ DisassemblyWidget::DisassemblyWidget(Controller* controller, SymTable* symtab, Q
 
     } );
     connect(controller_, &Controller::disconnected, this, [this]() { setEnabled(false);} );
-    connect(controller_, &Controller::executionPaused, this, [this]() { setEnabled(true);} );
-    connect(controller_, &Controller::executionResumed, this, [this]() { setEnabled(false);} );
+    connect(controller_, &Controller::executionPaused, this, [this](const MachineState& machineState) {
+        for(int i = 0; i < cpuCombo_->count(); i++) {
+            if (cpuCombo_->itemData(i).toInt() == (int)machineState.activeCpu) {
+                cpuCombo_->setCurrentIndex(i);
+                break;
+            }
+        }
+        setEnabled(true);
+    });
+    connect(controller_, &Controller::executionResumed, this, [this]() { setEnabled(false); });
 
     // Set up disassembly content
     scrollArea_ = new QScrollArea(this);
