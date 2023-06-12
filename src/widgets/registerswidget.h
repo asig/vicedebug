@@ -28,7 +28,48 @@
 
 namespace vicedebug {
 
-class RegistersWidget : public QGroupBox {
+class RegsGroup : public QGroupBox {
+    Q_OBJECT
+
+public:
+    RegsGroup(QString title, QWidget* parent);
+    virtual ~RegsGroup() = default;
+
+    virtual void clear() = 0;
+    virtual void initFromRegs(const Registers& regs) = 0;
+    virtual bool saveToRegs(Registers& regs) = 0;
+
+    QLineEdit* createLineEdit(int len);
+
+    const std::vector<std::unique_ptr<FocusWatcher>>& getFocusWatchers() {
+        return focusWatchers_;
+    }
+
+protected:
+    std::vector<std::unique_ptr<FocusWatcher>> focusWatchers_;
+};
+
+class Regs6502Group : public RegsGroup {
+    Q_OBJECT
+
+public:
+    Regs6502Group(QString title, QWidget* parent);
+    ~Regs6502Group() = default;
+
+    virtual void clear() override;
+    virtual void initFromRegs(const Registers& regs) override;
+    virtual bool saveToRegs(Registers& regs) override;
+
+private:
+    QLineEdit* pc_;
+    QLineEdit* sp_;
+    QLineEdit* a_;
+    QLineEdit* x_;
+    QLineEdit* y_;
+    QLineEdit* flags_;
+};
+
+class RegistersWidget : public QWidget {
     Q_OBJECT
 
 public:
@@ -51,21 +92,7 @@ private:
     Controller* controller_;
 
     Registers regs_;
-
-    QLineEdit* pc_;
-    QLineEdit* sp_;
-    QLineEdit* a_;
-    QLineEdit* x_;
-    QLineEdit* y_;
-    QLineEdit* flags_;
-
-    FocusWatcher* pcFocusWatcher_;
-    FocusWatcher* spFocusWatcher_;
-    FocusWatcher* aFocusWatcher_;
-    FocusWatcher* xFocusWatcher_;
-    FocusWatcher* yFocusWatcher_;
-    FocusWatcher* flagsFocusWatcher_;
-
+    std::vector<RegsGroup*> regsGroups_;
 };
 
 }
