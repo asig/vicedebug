@@ -75,6 +75,9 @@ WatchesWidget::~WatchesWidget()
 
 void WatchesWidget::enableControls(bool enable) {
     this->setEnabled(enable);
+    tree_->setEnabled(enable);
+    addBtn_->setEnabled(enable);
+    removeBtn_->setEnabled(enable && tree_->selectedItems().size() == 1);
 }
 
 void WatchesWidget::clearTree() {
