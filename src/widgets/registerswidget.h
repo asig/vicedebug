@@ -35,6 +35,8 @@ public:
     RegsGroup(QString title, QWidget* parent);
     virtual ~RegsGroup() = default;
 
+    virtual bool isFor(Cpu cpu) const = 0;
+
     virtual void clear() = 0;
     virtual void initFromRegs(const Registers& regs) = 0;
     virtual bool saveToRegs(Registers& regs) = 0;
@@ -56,6 +58,10 @@ public:
     Regs6502Group(QString title, QWidget* parent);
     ~Regs6502Group() = default;
 
+    virtual bool isFor(Cpu cpu) const override {
+        return cpu == Cpu::MOS6502;
+    }
+
     virtual void clear() override;
     virtual void initFromRegs(const Registers& regs) override;
     virtual bool saveToRegs(Registers& regs) override;
@@ -67,6 +73,41 @@ private:
     QLineEdit* x_;
     QLineEdit* y_;
     QLineEdit* flags_;
+};
+
+class RegsZ80Group : public RegsGroup {
+    Q_OBJECT
+
+public:
+    RegsZ80Group(QString title, QWidget* parent);
+    ~RegsZ80Group() = default;
+
+    virtual bool isFor(Cpu cpu) const override {
+        return cpu == Cpu::Z80;
+    }
+
+    virtual void clear() override;
+    virtual void initFromRegs(const Registers& regs) override;
+    virtual bool saveToRegs(Registers& regs) override;
+
+private:
+    QLineEdit* pc_;
+    QLineEdit* sp_;
+
+    QLineEdit* af_;
+    QLineEdit* bc_;
+    QLineEdit* de_;
+    QLineEdit* hl_;
+
+    QLineEdit* ix_;
+    QLineEdit* iy_;
+    QLineEdit* i_;
+    QLineEdit* r_;
+
+    QLineEdit* afPrime_;
+    QLineEdit* bcPrime_;
+    QLineEdit* dePrime_;
+    QLineEdit* hlPrime_;
 };
 
 class RegistersWidget : public QWidget {
@@ -87,12 +128,13 @@ private slots:
 private:
     void enableControls(bool enable);
     void clearControls();
-    void fillControls();
+    void fillControls();       
 
     Controller* controller_;
 
     Registers regs_;
-    std::vector<RegsGroup*> regsGroups_;
+    std::unordered_map<Cpu, RegsGroup*> regsGroupForCpu_;
+    RegsGroup* activeRegsGroup_;
 };
 
 }
