@@ -116,10 +116,6 @@ MachineState Controller::getMachineState() {
     }
 
     // Get registers
-    auto getMemResponseFuture = viceClient_->memGet(0, 0xffff, MemSpace::MAIN_MEMORY, 0, false);
-    getMemResponseFuture.waitForFinished();
-    auto getMemResponse = getMemResponseFuture.result();
-
     auto registersResponseFuture = viceClient_->registersGet(MemSpace::MAIN_MEMORY);
     registersResponseFuture.waitForFinished();
     auto registersResponse = registersResponseFuture.result();
@@ -136,7 +132,7 @@ MachineState Controller::getMachineState() {
 
     // Determine available CPUs and active CPU
     machineState.activeCpu = Cpu::MOS6502;
-    if (system_ == System::C128 && (machineState.memory[0][0xd505] & 1) == 0) {
+    if (system_ == System::C128 && machineState.regs.contains(Registers::IX)) {
         machineState.activeCpu = Cpu::Z80;
     }
     machineState.availableCpus = availableCpus_;
