@@ -1,6 +1,8 @@
 # Bugs
 - [X] Crash when disconnect
 - [X] Crash on reconnect
+- [ ] CPU Selection for C128 not working
+      CPU is defined by the registers that are returned.
 
 - Memory Widget
    - [X] Watch type "float" not highlighted correctly
@@ -87,6 +89,7 @@
 
 ## Registers Widget
 - [X] Add register modification
+- [ ] Add Z80 registers
 
 ## Other stuff
 - [X] Derive system we're debugging from VICE resopnses
@@ -100,6 +103,8 @@
       - [X] Disassembler
       - [X] Figure out when Z80 is active
       - [ ] Handle Z80 registers!
+        - [X] in VICE controller
+        - [ ] in Registers widget
 - [ ] Support CPU jams
 
 ## Make it look good
