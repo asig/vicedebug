@@ -245,6 +245,10 @@ void MainWindow::createMainUI() {
     BreakpointsWidget* breakpointsWidget = new BreakpointsWidget(controller_, &symtab_, this);
     WatchesWidget* watchesWidget = new WatchesWidget(controller_, &symtab_, this);
 
+    // Don't use setContentMargin() on the widgets, this will mess with the QTreeWidgets
+    // (at least with Qt 6.5.1 under Ubuntu 23/04). Can we wrap them with an empty
+    // QWidget instead?
+
     QSplitter* lowerPart = new QSplitter(Qt::Horizontal);
     lowerPart->addWidget(registersWidget);
     lowerPart->addWidget(breakpointsWidget);
@@ -253,7 +257,6 @@ void MainWindow::createMainUI() {
     lowerPart->setStretchFactor(0, 0);
     lowerPart->setStretchFactor(1, 1);
     lowerPart->setStretchFactor(2, 1);
-
 
     memoryWidget_ = new MemoryWidget(controller_, this);
     DisassemblyWidget* disassembly = new DisassemblyWidget(controller_, &symtab_, this);
