@@ -1,7 +1,7 @@
 # Bugs
 - [X] Crash when disconnect
 - [X] Crash on reconnect
-- [ ] CPU Selection for C128 not working
+- [X] CPU Selection for C128 not working
       CPU is defined by the registers that are returned.
 
 - Memory Widget
@@ -32,7 +32,7 @@
       - [ ] in "add watch" dialog
 - [ ] Expression parser for addresses: Available everywhere where an addr is needed, knows about symbols, dynamic
 - Symbol table:
-  [ ] Load
+  [X] Load
   [ ] Edit
   
 ## Disassembler Widget
@@ -45,6 +45,9 @@
 - [ ] Mouse-over breakpoints shows breakpoint info
 - [ ] Context Menu on address params to create watchpoints
 - [X] Switch between 6502 and Z80
+
+## Symbols Widget
+- [ ] Inline edits
 
 ## Memory Widget
 - [X] Allow modifying memory
