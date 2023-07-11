@@ -38,6 +38,7 @@
 #include "widgets/breakpointswidget.h"
 #include "widgets/registerswidget.h"
 #include "widgets/memorywidget.h"
+#include "widgets/symbolswidget.h"
 
 namespace {
 
@@ -242,6 +243,7 @@ void MainWindow::createMenuBar() {
 
 void MainWindow::createMainUI() {
     RegistersWidget* registersWidget = new RegistersWidget(controller_, this);
+    SymbolsWidget* symbolsWidget = new SymbolsWidget(controller_, &symtab_, this);
     BreakpointsWidget* breakpointsWidget = new BreakpointsWidget(controller_, &symtab_, this);
     WatchesWidget* watchesWidget = new WatchesWidget(controller_, &symtab_, this);
 
@@ -251,12 +253,14 @@ void MainWindow::createMainUI() {
 
     QSplitter* lowerPart = new QSplitter(Qt::Horizontal);
     lowerPart->addWidget(registersWidget);
+    lowerPart->addWidget(symbolsWidget);
     lowerPart->addWidget(breakpointsWidget);
     lowerPart->addWidget(watchesWidget);
 
     lowerPart->setStretchFactor(0, 0);
     lowerPart->setStretchFactor(1, 1);
     lowerPart->setStretchFactor(2, 1);
+    lowerPart->setStretchFactor(3, 1);
 
     memoryWidget_ = new MemoryWidget(controller_, this);
     DisassemblyWidget* disassembly = new DisassemblyWidget(controller_, &symtab_, this);
