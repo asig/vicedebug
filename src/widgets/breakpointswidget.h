@@ -51,7 +51,6 @@ public slots:
     void onExecutionResumed();
     void onExecutionPaused(const MachineState& machineState);
     void onBreakpointsChanged(const Breakpoints& breakpoints);
-    void onSymTabChanged(std::shared_ptr<SymTable> symTable);
 
 private slots:
     void onTreeItemSelectionChanged();

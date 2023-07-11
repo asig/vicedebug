@@ -154,10 +154,6 @@ void BreakpointsWidget::onBreakpointsChanged(const Breakpoints& breakpoints) {
     fillTree(breakpoints);
 }
 
-void BreakpointsWidget::onSymTabChanged(std::shared_ptr<SymTable>) {
-    // IMPLEMENT ME!
-}
-
 void BreakpointsWidget::onTreeItemSelectionChanged() {
     auto selectedItems = tree_->selectedItems();
     removeBtn_->setEnabled(selectedItems.size() == 1);
