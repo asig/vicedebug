@@ -39,6 +39,8 @@ set(PROJECT_SOURCES
         src/dialogs/breakpointdialog.cpp
         src/dialogs/watchdialog.h
         src/dialogs/watchdialog.cpp
+        src/dialogs/symboldialog.h
+        src/dialogs/symboldialog.cpp
         src/widgets/breakpointswidget.h
         src/widgets/breakpointswidget.cpp
         src/widgets/disassemblywidget.h
@@ -49,6 +51,8 @@ set(PROJECT_SOURCES
         src/widgets/registerswidget.cpp
         src/widgets/watcheswidget.h
         src/widgets/watcheswidget.cpp
+        src/widgets/symbolswidget.h
+        src/widgets/symbolswidget.cpp
         src/machinestate.h
         src/machinestate.cpp
         src/breakpoints.h
@@ -115,6 +119,8 @@ enable_testing(true)
 qt_add_executable(disassembler_6502_test
     MANUAL_FINALIZATION
     test/disassembler_6502_test.cpp
+    src/symtab.h
+    src/symtab.cpp
     src/disassembler.h
     src/disassembler.cpp
     src/disassembler_6502.h
@@ -132,6 +138,8 @@ qt_finalize_executable(disassembler_6502_test)
 qt_add_executable(disassembler_z80_test
     MANUAL_FINALIZATION
     test/disassembler_z80_test.cpp
+    src/symtab.h
+    src/symtab.cpp
     src/disassembler.h
     src/disassembler.cpp
     src/disassembler_z80.h
