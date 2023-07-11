@@ -20,24 +20,38 @@
 #pragma once
 
 #include <string>
+#include <vector>
 #include <memory>
 #include <unordered_map>
 
+#include <QObject>
+
 namespace vicedebug {
 
-class SymTable {
+class SymTable : public QObject {
+    Q_OBJECT
+
 public:
     SymTable() = default;
     ~SymTable() = default;
 
     bool loadFromFile(const std::string filename);
+    void set(const std::string& label, std::uint16_t address);
+    void remove(const std::string& label);
 
     bool hasLabelForAddress(std::uint16_t addr) const;
     std::string labelForAddress(std::uint16_t addr);
 
+    std::vector<std::string> labels() const;
+    std::vector<std::pair<std::string, std::uint16_t>> elements() const;
+
     void dump();
+
+signals:
+    void symbolsChanged();
+
 private:
-    std::unordered_map<std::uint16_t, std::string> symtable_;
+    std::unordered_map<std::string, std::uint16_t> addressForLabel_;
 };
 
 }

@@ -37,8 +37,8 @@ bool SymTable::loadFromFile(const std::string filename) {
         return false;
     }
 
+    std::unordered_map<std::string, std::uint16_t> addressForLabel;
 
-    std::unordered_map<std::uint16_t, std::string> t;
     std::string l;
     while (std::getline(file, l)) {
         QString line = QString(l.c_str()).trimmed();
@@ -59,38 +59,88 @@ bool SymTable::loadFromFile(const std::string filename) {
                 continue;
             }
             std::uint16_t address = parts[1].mid(2).toInt(nullptr, 16);
-            QString label = parts[2].mid(1);
-            t[address] = label.toStdString();
+            std::string label = parts[2].mid(1).toStdString();
+            addressForLabel[label] = address;
         } else if (line.contains("=")) {
             // ACME fprmat:
             // "labelname = $1234 ; Maybe a comment"
             auto idx = line.indexOf("=");
-            QString label = line.left(idx).trimmed();
+            std::string label = line.left(idx).trimmed().toStdString();
             line = line.mid(idx+1);
             idx = line.indexOf(";"); // Get rid of comment
             if (idx > -1) {
                 line = line.mid(idx).trimmed();
             }
             std::uint16_t address = line.mid(1).trimmed().toInt(nullptr, 16);
-            t[address] = label.toStdString();
+            addressForLabel[label] = address;
         } else {
             qDebug() << "SymTable::loadFromFile: bad line: " << line;
         }
     }
-    symtable_ = t;
+    addressForLabel_ = addressForLabel;
+    emit symbolsChanged();
     return true;
 }
 
+void SymTable::set(const std::string& label, std::uint16_t address) {
+    bool changed = false;
+    if (!addressForLabel_.contains(label)) {
+        // Label not yet in
+        changed = true;
+        addressForLabel_[label] = address;
+    } else {
+        changed = addressForLabel_[label] != address;
+        addressForLabel_[label] = address;
+    }
+    if (changed) {
+        emit symbolsChanged();
+    }
+}
+
+void SymTable::remove(const std::string& label) {
+    bool changed = addressForLabel_.contains(label);
+    addressForLabel_.erase(label);
+    if (changed) {
+        emit symbolsChanged();
+    }
+}
+
 bool SymTable::hasLabelForAddress(std::uint16_t addr) const {
-    return symtable_.contains(addr);
+    for (const auto& [label, a] : addressForLabel_) {
+        if (a == addr) {
+            return true;
+        }
+    }
+    return false;
 }
 
 std::string SymTable::labelForAddress(std::uint16_t addr) {
-    return symtable_[addr];
+    for (const auto& [label, a] : addressForLabel_) {
+        if (a == addr) {
+            return label;
+        }
+    }
+    return "";
+}
+
+std::vector<std::string> SymTable::labels() const {
+    std::vector<std::string> labels;
+    for (const auto& [label, _] : addressForLabel_) {
+        labels.push_back(label);
+    }
+    return labels;
+}
+
+std::vector<std::pair<std::string, std::uint16_t>> SymTable::elements() const {
+    std::vector<std::pair<std::string, std::uint16_t>> res;
+    for (const auto& p : addressForLabel_) {
+        res.push_back(p);
+    }
+    return res;
 }
 
 void SymTable::dump() {
-    for (const auto& [addr, label] : symtable_) {
+    for (const auto& [label, addr] : addressForLabel_) {
         qDebug() << label.c_str() << "\t" << QString::asprintf("%04x", addr).toStdString().c_str();
     }
 }
