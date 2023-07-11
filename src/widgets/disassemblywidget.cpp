@@ -61,7 +61,10 @@ QColor kBreakpointFgDisabled = QColor(Qt::lightGray).lighter(80);
 DisassemblyWidget::DisassemblyWidget(Controller* controller, SymTable* symtab, QWidget* parent) :
     QWidget(parent), controller_(controller) {
 
+    connect(symtab, &SymTable::symbolsChanged, this, &DisassemblyWidget::onSymTabChanged);
+
     connect(controller_, &Controller::connected, this, [this](const MachineState& machineState) {
+        connected_ = true;
         bool multipleCpus = machineState.availableCpus.size() > 1;
         cpuCombo_->setVisible(multipleCpus);
         cpuLabel_->setVisible(multipleCpus);
@@ -78,7 +81,10 @@ DisassemblyWidget::DisassemblyWidget(Controller* controller, SymTable* symtab, Q
         setEnabled(true);
 
     } );
-    connect(controller_, &Controller::disconnected, this, [this]() { setEnabled(false);} );
+    connect(controller_, &Controller::disconnected, this, [this]() {
+        connected_ = false;
+        setEnabled(false);
+    });
     connect(controller_, &Controller::executionPaused, this, [this](const MachineState& machineState) {
         for(int i = 0; i < cpuCombo_->count(); i++) {
             if (cpuCombo_->itemData(i).toInt() == (int)machineState.activeCpu) {
@@ -150,8 +156,10 @@ DisassemblyWidget::~DisassemblyWidget() {
 }
 
 void DisassemblyWidget::onSymTabChanged() {
-    content_->updateDisassembly();
-    content_->update();
+    if (connected_) {
+        content_->updateDisassembly();
+        content_->update();
+    }
 }
 
 // Move this into a util function
@@ -352,7 +360,6 @@ void DisassemblyContent::enableControls(bool enable) {
 }
 
 void DisassemblyContent::onConnected(const MachineState& machineState, const Banks& banks, const Breakpoints& breakpoints) {
-    qDebug() << "DisassemblyWidget::onConnected called";
     memory_ = machineState.memory.at(machineState.cpuBankId);
     pc_ = machineState.regs[Registers::PC];
     disassembler_ = disassemblersPerCpu_[machineState.activeCpu];
@@ -362,7 +369,6 @@ void DisassemblyContent::onConnected(const MachineState& machineState, const Ban
 }
 
 void DisassemblyContent::onDisconnected() {
-    qDebug() << "DisassemblyWidget::onDisconnected called";
     addressToBreakpoint_.clear();
     addressToLine_.clear();
     lines_.resize(0);

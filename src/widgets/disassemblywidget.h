@@ -55,6 +55,7 @@ private:
     std::optional<std::uint16_t> parseAddress(QString s);
 
     Controller* controller_;
+    bool connected_;
 
     QScrollArea* scrollArea_;
     DisassemblyContent* content_;
