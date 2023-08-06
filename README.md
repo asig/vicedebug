@@ -66,3 +66,5 @@ TODO
 ## License
 Copyright (c) 2023 Andreas Signer.  
 Licensed under [GPLv3](https://www.gnu.org/licenses/gpl-3.0).
+
+Bug in "About" logo by Sidney Vincent from [Noun Project](https://thenounproject.com/browse/icons/term/insect/) (CC BY 3.0)
