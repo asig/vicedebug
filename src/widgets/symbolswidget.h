@@ -54,7 +54,6 @@ public slots:
 
 private slots:
     void onTreeItemSelectionChanged();
-    void onTreeItemChanged(QTreeWidgetItem* item, int column);
     void onTreeItemDoubleClicked(QTreeWidgetItem* item, int column);
     void onAddClicked();
     void onRemoveClicked();
