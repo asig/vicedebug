@@ -111,5 +111,7 @@
 - [ ] Support CPU jams
 
 ## Make it look good
+- [ ] Add icons
+
 ### Windows
 - [ ] Font size for watches and breakpoints
