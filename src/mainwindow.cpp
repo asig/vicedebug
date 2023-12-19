@@ -100,6 +100,7 @@ void MainWindow::createActions() {
     loadSymbolsAction_ = a;
 
     emulatorRunning_ = false;
+    connected_ = false;
     a = new QAction(Resources::loadColoredIcon(kCol2, ":/images/codicons/debug-continue.svg"), tr("Continue"));
     a->setShortcut(Qt::Key_F5);
     a->setEnabled(false);
@@ -339,13 +340,26 @@ void MainWindow::onConnected(const MachineState& machineState) {
     findHexAction_->setEnabled(true);
     findTextAction_->setEnabled(true);
 
+    connected_ = true;
     emulatorRunning_ = false;
     updateDebugControlButtons();
 }
 
 void MainWindow::onConnectionFailed() {
     QMessageBox::warning(this, "Can't connect", "Can't connect to VICE.\nDid you start the emulator with\nthe --binarymonitor flag?");
-    onDisconnected();
+    disconnectAction_->setVisible(false);
+    disconnectAction_->setEnabled(false);
+
+    connectAction_->setChecked(false);
+    connectAction_->setVisible(true);
+    connectAction_->setEnabled(true);
+
+    findHexAction_->setEnabled(false);
+    findTextAction_->setEnabled(false);
+
+    connected_ = false;
+    emulatorRunning_ = false;
+    updateDebugControlButtons();
 }
 
 void MainWindow::onDisconnected() {
@@ -359,18 +373,19 @@ void MainWindow::onDisconnected() {
     findHexAction_->setEnabled(false);
     findTextAction_->setEnabled(false);
 
+    connected_ = false;
     emulatorRunning_ = true;
     updateDebugControlButtons();
 }
 
 void MainWindow::updateDebugControlButtons() {
-    stepInAction_->setEnabled(!emulatorRunning_);
-    stepOutAction_->setEnabled(!emulatorRunning_);
-    stepOverAction_->setEnabled(!emulatorRunning_);
-    continueAction_->setEnabled(!emulatorRunning_);
-    continueAction_->setVisible(!emulatorRunning_);
-    pauseAction_->setEnabled(emulatorRunning_);
-    pauseAction_->setVisible(emulatorRunning_);
+    stepInAction_->setEnabled(connected_ && !emulatorRunning_);
+    stepOutAction_->setEnabled(connected_ && !emulatorRunning_);
+    stepOverAction_->setEnabled(connected_ && !emulatorRunning_);
+    continueAction_->setEnabled(connected_ && !emulatorRunning_);
+    continueAction_->setVisible(connected_ && !emulatorRunning_);
+    pauseAction_->setEnabled(connected_ && emulatorRunning_);
+    pauseAction_->setVisible(connected_ && emulatorRunning_);
 }
 
 void MainWindow::onExecutionResumed() {

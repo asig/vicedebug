@@ -90,6 +90,7 @@ private:
     QAction* findTextAction_;
     QAction* findHexAction_;
 
+    bool connected_;
     bool emulatorRunning_;
 
     Controller* controller_;
