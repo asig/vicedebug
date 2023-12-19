@@ -24,14 +24,14 @@ or even look good on any other platform.
 Assuming you're on Ubuntu, run this command:
 
 ```bash
-sudo apt-get install qtcreator cmake qt6-base-dev`
+sudo apt-get install qtcreator cmake qt6-base-dev
 ```
 
 On other systems, run the equivalent commands that give you a dev
 
 ### Building the binary
 
-The most basic command line: `cmake . && make -j$(nproc)`
+On the command line: `cmake . -B build && cd build && make -j$(nproc)`
 
 Of course, you can also just open project in QtCreator and build it from there.
 On Windows, this is in my opinion by far the easiest approach.
