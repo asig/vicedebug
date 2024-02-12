@@ -104,6 +104,7 @@ void MainWindow::createActions() {
     a = new QAction(Resources::loadColoredIcon(kCol2, ":/images/codicons/debug-continue.svg"), tr("Continue"));
     a->setShortcut(Qt::Key_F5);
     a->setEnabled(false);
+    a->setVisible(false);
     a->setToolTip(a->text() + " (" + tr("F5") + ")");
     continueAction_ = a;
     connect(continueAction_, &QAction::triggered, this, &MainWindow::onContinueClicked);
@@ -269,7 +270,7 @@ void MainWindow::createMainUI() {
     QSplitter* upperPart = new QSplitter(Qt::Horizontal);
     upperPart->addWidget(disassembly);
     upperPart->addWidget(memoryWidget_);
-    upperPart->setSizes({10000, 20000}); // Use large values, Qt seems to keep the ratio. See also https://stackoverflow.com/questions/43831474/how-to-equally-distribute-the-width-of-qsplitter
+    upperPart->setSizes({5000, 5000}); // Use large values, Qt seems to keep the ratio. See also https://stackoverflow.com/questions/43831474/how-to-equally-distribute-the-width-of-qsplitter
 
     QSplitter* all = new QSplitter(Qt::Vertical);
     all->addWidget(upperPart);
