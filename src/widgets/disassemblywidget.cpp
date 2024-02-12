@@ -348,8 +348,22 @@ void DisassemblyContent::paintLine(QPainter& painter, const QRect& updateRect, i
         painter.drawText(x + separatorW_/2 + addressW_ + separatorW_ + i * hexW_, y, text);
     }
 
+    std::string disassembly;
+
+    // ... label (if there are any)
+    QString labelPart;
+    if (!symtab_->labels().empty()) {
+        std::string label = symtab_->labelForAddress(line.addr);
+        if (!label.empty()) {
+            labelPart = QString::asprintf("%-17s", (label + ":").c_str()) + " ";
+        } else {
+            labelPart = QString::asprintf("%-17s", "") + " ";
+        }
+    }
+
     // ... disassembly
-    painter.drawText(x + separatorW_/2 + addressW_ + separatorW_ + 3 * hexW_ - charW_ + separatorW_ , y, line.disassembly.c_str());
+    disassembly = labelPart.toStdString() + line.disassembly;
+    painter.drawText(x + separatorW_/2 + addressW_ + separatorW_ + 3 * hexW_ - charW_ + separatorW_ , y, disassembly.c_str());
 }
 
 DisassemblyContent::~DisassemblyContent() {
