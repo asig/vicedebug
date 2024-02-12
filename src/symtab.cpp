@@ -139,6 +139,16 @@ std::vector<std::pair<std::string, std::uint16_t>> SymTable::elements() const {
     return res;
 }
 
+int SymTable::maxLabelLength() const {
+    int len = 0;
+    for (const auto& label : labels()) {
+        if (label.length() > len) {
+            len = label.length();
+        }
+    }
+    return len;
+}
+
 void SymTable::dump() {
     for (const auto& [label, addr] : addressForLabel_) {
         qDebug() << label.c_str() << "\t" << QString::asprintf("%04x", addr).toStdString().c_str();

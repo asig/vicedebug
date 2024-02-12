@@ -45,6 +45,8 @@ public:
     std::vector<std::string> labels() const;
     std::vector<std::pair<std::string, std::uint16_t>> elements() const;
 
+    int maxLabelLength() const;
+
     void dump();
 
 signals:
