@@ -45,9 +45,12 @@
 - [ ] Mouse-over breakpoints shows breakpoint info
 - [ ] Context Menu on address params to create watchpoints
 - [X] Switch between 6502 and Z80
+- [X] Use labels in disassembly
 
 ## Symbols Widget
 - [ ] Inline edits
+- [ ] Sort labels
+- [ ] double click takes you to disassembly
 
 ## Memory Widget
 - [X] Allow modifying memory
@@ -68,6 +71,7 @@
       - [X] text
 
 ## Breakpoints Widget
+- [ ] Inline edits
 - [X] Add breakpoint
 - [X] Remove breakpoint
 - [X] Enable/Disable breakpoints
@@ -109,6 +113,9 @@
         - [X] in VICE controller
         - [ ] in Registers widget
 - [ ] Support CPU jams
+- [ ] debug configurations: breakpoints, watches, symbols
+      - [ ] save configuration
+      - [ ] load configuration
 
 ## Make it look good
 - [ ] Add icons
