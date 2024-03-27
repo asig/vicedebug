@@ -49,7 +49,7 @@
 
 ## Symbols Widget
 - [ ] Inline edits
-- [ ] Sort labels
+- [X] Sort labels
 - [ ] double click takes you to disassembly
 
 ## Memory Widget
