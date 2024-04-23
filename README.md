@@ -24,10 +24,17 @@ or even look good on any other platform.
 Assuming you're on Ubuntu, run this command:
 
 ```bash
-sudo apt-get install qtcreator cmake qt6-base-dev
+sudo apt-get install cmake qt6-base-dev
+```
+
+If you want to modify the code, I suggest you also install QtCreator:
+
+```bash
+sudo apt-get install qtcreator
 ```
 
 On other systems, run the equivalent commands that give you a dev
+environment.
 
 ### Building the binary
 
