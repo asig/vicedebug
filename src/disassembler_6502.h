@@ -36,6 +36,7 @@ protected:
     Line disassembleLine(std::uint16_t& pos, const std::vector<std::uint8_t>& memory) override;
 
 private:
+    std::string labelOrAddr(std::uint16_t addr, int len) const;
     bool checkValidInstr(int depth, std::uint16_t pos, const std::vector<std::uint8_t>& memory, int len, bool illegalAllowed);
 };
 

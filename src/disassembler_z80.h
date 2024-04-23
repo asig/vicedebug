@@ -33,6 +33,7 @@ public:
     std::vector<Line> disassembleBackward(std::uint16_t pos, const std::vector<std::uint8_t>& memory, int lines, const std::vector<Line>& disassemblyHint) override;
 
 protected:
+    QString labelOrAddr(std::uint16_t addr, int len) const;
     Line disassembleLine(std::uint16_t& pos, const std::vector<std::uint8_t>& memory) override;
 };
 

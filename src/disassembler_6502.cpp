@@ -397,6 +397,15 @@ std::vector<Disassembler::Line> Disassembler6502::disassembleBackward(std::uint1
     return res;
 }
 
+std::string Disassembler6502::labelOrAddr(std::uint16_t addr, int len) const {
+    std::string label = symtab_->labelForAddress(addr);
+    if (label.empty()) {
+        std::string format = "$%0" + std::to_string(len) + "X";
+        label = QString::asprintf(format.c_str(), addr).toStdString();
+    }
+    return label;
+}
+
 Disassembler::Line Disassembler6502::disassembleLine(std::uint16_t& pos, const std::vector<std::uint8_t>& memory) {
     Line res;
     res.addr = pos;
@@ -407,6 +416,7 @@ Disassembler::Line Disassembler6502::disassembleLine(std::uint16_t& pos, const s
     const InstrDesc& desc = instructions[b];
     res.disassembly = desc.mnemo;
 
+    std::string label;
     std::uint8_t t1,t2;
     std::uint16_t t3;
     switch(desc.mode) {
@@ -415,18 +425,19 @@ Disassembler::Line Disassembler6502::disassembleLine(std::uint16_t& pos, const s
         t2 = memory[pos++ % 0xffff];
         res.bytes.push_back(t1);
         res.bytes.push_back(t2);
-        res.disassembly += QString::asprintf(" $%04X", t2 << 8 | t1).toStdString();
+        res.disassembly += " " + labelOrAddr(t2 << 8 | t1, 4);
         break;
     case AM_ZERO_PAGE:
         t1 = memory[pos++ % 0xffff];
         res.bytes.push_back(t1);
-        res.disassembly += QString::asprintf(" $%02X", t1).toStdString();
+        res.disassembly += " " + labelOrAddr(t1, 2);
         break;
     case AM_ZERO_PAGE_X:
     case AM_ZERO_PAGE_Y:
         t1 = memory[pos++ % 0xffff];
         res.bytes.push_back(t1);
-        res.disassembly += QString::asprintf(" $%02X,%s", t1, desc.mode==AM_ZERO_PAGE_X ? "X":"Y").toStdString();
+        label = labelOrAddr(t1, 2);
+        res.disassembly += QString::asprintf(" %s,%s", label.c_str(), desc.mode==AM_ZERO_PAGE_X ? "X":"Y").toStdString();
         break;
     case AM_ACCUMULATOR:
         break;
@@ -440,17 +451,19 @@ Disassembler::Line Disassembler6502::disassembleLine(std::uint16_t& pos, const s
         t2 = memory[pos++ % 0xffff];
         res.bytes.push_back(t1);
         res.bytes.push_back(t2);
-        res.disassembly += QString::asprintf(" ($%04X)", t2 << 8 | t1).toStdString();
+        res.disassembly += " (" + labelOrAddr(t2 << 8 | t1,4) +")";
         break;
     case AM_INDIRECT_X:
         t1 = memory[pos++ % 0xffff];
         res.bytes.push_back(t1);
-        res.disassembly += QString::asprintf(" ($%02X,X)", t1).toStdString();
+        label = labelOrAddr(t1, 2);
+        res.disassembly += QString::asprintf(" (%s,X)", label.c_str()).toStdString();
         break;
     case AM_INDIRECT_Y:
         t1 = memory[pos++ % 0xffff];
         res.bytes.push_back(t1);
-        res.disassembly += QString::asprintf(" ($%02X),Y", t1).toStdString();
+        label = labelOrAddr(t1, 2);
+        res.disassembly += QString::asprintf(" (%s),Y", label.c_str()).toStdString();
         break;
     case AM_INDEXED_X:
     case AM_INDEXED_Y:
@@ -458,13 +471,14 @@ Disassembler::Line Disassembler6502::disassembleLine(std::uint16_t& pos, const s
         t2 = memory[pos++ % 0xffff];
         res.bytes.push_back(t1);
         res.bytes.push_back(t2);
-        res.disassembly += QString::asprintf(" $%04X,%s", t2 << 8 | t1, desc.mode==AM_INDEXED_X ? "X":"Y").toStdString();
+        label = labelOrAddr(t2 << 8 | t1, 4);
+        res.disassembly += QString::asprintf(" %s,%s", label.c_str(), desc.mode==AM_INDEXED_X ? "X":"Y").toStdString();
         break;
     case AM_RELATIVE:
         t1 = memory[pos++ % 0xffff];
         res.bytes.push_back(t1);
         t3 = pos + (std::int8_t)t1;
-        res.disassembly += QString::asprintf(" $%04X", t3).toStdString();
+        res.disassembly += " " + labelOrAddr(t3, 4);
         break;
     case AM_IMPLIED:
         break;

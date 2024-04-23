@@ -33,7 +33,7 @@ enum ParamType {
     ABS16, // 16bit value
     REL,  // 8bit relative
     DISP, // 8bit displacement
-    DISP_ABS8,  // 8bit displacement, 8bit value
+    DISP_ABS8,  // 8bit displacement, 8bit immediate value
 };
 
 struct InstrDesc {
@@ -1987,6 +1987,15 @@ std::vector<Disassembler::Line> DisassemblerZ80::disassembleBackward(std::uint16
     return res;
 }
 
+QString DisassemblerZ80::labelOrAddr(std::uint16_t addr, int len) const {
+    QString label = symtab_->labelForAddress(addr).c_str();
+    if (label.isEmpty()) {
+        std::string format = "$%0" + std::to_string(len) + "X";
+        label = QString::asprintf(format.c_str(), addr);
+    }
+    return label;
+}
+
 Disassembler::Line DisassemblerZ80::disassembleLine(std::uint16_t& pos, const std::vector<std::uint8_t>& memory) {
 
     Line res;
@@ -2013,13 +2022,13 @@ Disassembler::Line DisassemblerZ80::disassembleLine(std::uint16_t& pos, const st
         if (fetchParam) {
             param = fetchUInt8(res, pos, memory);
         }
-        paramStr = QString::asprintf("$%02X", param);
+        paramStr = labelOrAddr(param,2);
         break;
     case ABS16:
         if (fetchParam) {
             param = fetchUInt16(res, pos, memory);
         }
-        paramStr = QString::asprintf("$%04X", param);
+        paramStr = labelOrAddr(param,4);
         break;
     case REL:
         if (fetchParam) {
