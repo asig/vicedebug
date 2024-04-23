@@ -28,6 +28,7 @@
 #include <QTimer>
 #include <QStyledItemDelegate>
 #include <QValidator>
+#include <QHeaderView>
 
 #include "dialogs/symboldialog.h"
 
@@ -91,8 +92,10 @@ SymbolsWidget::SymbolsWidget(Controller* controller, SymTable* symtab, QWidget* 
     tree_->setColumnCount(2);
     tree_->setHeaderLabels({ "Symbol","Address"} );
     tree_->setSelectionBehavior(QAbstractItemView::SelectRows);
+    tree_->sortByColumn(0, Qt::AscendingOrder);
     connect(tree_, &QTreeWidget::itemSelectionChanged, this, &SymbolsWidget::onTreeItemSelectionChanged);
     connect(tree_, &QTreeWidget::itemDoubleClicked, this, &SymbolsWidget::onTreeItemDoubleClicked);
+//    connect(tree_->header(), &QHeaderView::sectionDoubleClicked, this, &SymbolsWidget::onTreeHeaderDoubleClicked);
 
     addBtn_ = new QToolButton();
     addBtn_->setIcon(QIcon(":/images/codicons/add.svg"));
@@ -146,13 +149,17 @@ void SymbolsWidget::enableControls(bool enable) {
 }
 
 void SymbolsWidget::clearTree() {
+    tree_->setSortingEnabled(false);
     tree_->clear();
+    tree_->setSortingEnabled(true);
 }
 
 void SymbolsWidget::fillTree() {
+    tree_->setSortingEnabled(false);
     for (const auto& [label, addr] : symtab_->elements()) {
         addItem(label, addr);
     }
+    tree_->setSortingEnabled(true);
 }
 
 void SymbolsWidget::onConnected(const MachineState& machineState, const Banks& banks, const Breakpoints& breakpoints) {
