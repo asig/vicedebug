@@ -106,10 +106,6 @@ ViceClient::ViceClient(QObject* parent)
     connectionWorker_->moveToThread(&connectionWorkerThread_);
 
     connect(&connectionWorkerThread_, &QThread::finished, connectionWorker_, &QObject::deleteLater);
-    //    auto res = connect(worker, &ConnectionWorker::responseReceived, this, &ViceClient::handleResponse);
-    //    std::cout << "************************ res == " << res << std::endl;
-    //    auto res = worker->connect(worker, &ConnectionWorker::responseReceived, this, &ViceClient::handleResponse,Qt::QueuedConnection);
-    //    std::cout << "************************ res == " << res << std::endl;
 
     connect(this, &ViceClient::connectionRequested, connectionWorker_, &ConnectionWorker::connectToHost);
     connect(this, &ViceClient::disconnectRequested, connectionWorker_, &ConnectionWorker::disconnect);

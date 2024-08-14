@@ -121,16 +121,11 @@ void ConnectionWorker::sendCommand(std::uint8_t cmd, std::vector<std::uint8_t> b
 
 std::uint32_t ConnectionWorker::readU32() {
     std::uint32_t res;
-    //    if (std::endian::native == std::endian::little) {
-    //        std::uint32_t res;
-    //        socket_.read((char*)&res, sizeof(res));
-    //    } else {
     std::uint8_t b1 = readU8();
     std::uint8_t b2 = readU8();
     std::uint8_t b3 = readU8();
     std::uint8_t b4 = readU8();
     res = b4 << 24 | b3 << 16 | b2 << 8 | b1;
-    //    }
     return res;
 }
 
@@ -140,15 +135,8 @@ std::uint8_t ConnectionWorker::readU8() {
     return res;
 }
 
-//void ConnectionWorker::putU32(std::uint32_t val, std::uint8_t* buf) {
-//    *(buf++) = val & 0xff;
-//    *(buf++) = (val >> 8) & 0xff;
-//    *(buf++) = (val >> 16) & 0xff;
-//    *(buf++) = (val >> 24) & 0xff;
-//}
-
 void ConnectionWorker::consumeBytes() {
-    std::cout << "Available bytes: " << socket_.bytesAvailable() << std::endl;
+    qDebug() << "Available bytes: " << socket_.bytesAvailable();
 
     while (socket_.bytesAvailable() > 0) {
         std::uint8_t b = readU8();
@@ -165,18 +153,18 @@ void ConnectionWorker::handleMessage(std::vector<std::uint8_t> message) {
     // check whether we understand the message.
     if (message[0] != 0x02) {
         // Bad magic
-        std::cout << "BAD MAGIC!" << std::endl;
+        qCritical() << "BAD MAGIC!";
         return;
     }
     if (message[1] != 0x02) {
-        std::cout << "BAD API VERSION" << std::endl;
+        qCritical() << "BAD API VERSION";
         return;
     }
     int responseType = message[6];
     int errorCode = message[7];
     std::uint32_t bodyLength = message[5] << 24 | message[4] << 16 | message[3] << 8 | message[2];
     if (message.size() - kHeaderSize != bodyLength) {
-        qWarning() << "BAD BODY LENGTH";
+        qCritical() << "BAD BODY LENGTH";
         return;
     }
     std::uint32_t responseID = message[11] << 24 | message[10] << 16 | message[9] << 8 | message[8];
