@@ -38,7 +38,17 @@ environment.
 
 ### Building the binary
 
-On the command line: `cmake . -B build && cd build && make -j$(nproc)`
+On the command line:
+```
+cmake . -B build/Release -DCMAKE_BUILD_TYPE=Release
+cd build/Release
+make -j$(nproc)
+```
+
+Alternatively, if you want a debug build, just run this:
+```
+cmake . -B build && cd build && make -j$(nproc)
+```
 
 Of course, you can also just open project in QtCreator and build it from there.
 On Windows, this is in my opinion by far the easiest approach.

@@ -19,7 +19,6 @@ if(PROJECT_SOURCE_DIR STREQUAL PROJECT_BINARY_DIR)
   message(FATAL_ERROR "In-source builds not allowed. Use `cmake -B build; cd build; make -j$(nproc)` instead.\n")
 endif()
 
-
 find_package(QT
     NAMES Qt6
     REQUIRED COMPONENTS
@@ -101,6 +100,10 @@ set(PROJECT_SOURCES
 qt_add_executable(vicedebug
     MANUAL_FINALIZATION
     ${PROJECT_SOURCES}
+)
+
+target_compile_definitions(vicedebug PRIVATE
+  $<$<CONFIG:Release>:QT_NO_DEBUG_OUTPUT>
 )
 
 target_link_libraries(vicedebug
