@@ -21,10 +21,10 @@ or even look good on any other platform.
 ## Building
 
 ### Installing prerequisites
-Assuming you're on Ubuntu, run this command:
+Assuming you're on Ubuntu or Debian, run this command:
 
 ```bash
-sudo apt-get install cmake qt6-base-dev
+sudo apt-get install cmake qt6-base-dev qt6-gtk-platformtheme adwaita-qt6
 ```
 
 If you want to modify the code, I suggest you also install QtCreator:
@@ -71,7 +71,7 @@ TODO
 TODO
 
 ## License
-Copyright (c) 2023 Andreas Signer.  
+Copyright (c) 2024 Andreas Signer.  
 Licensed under [GPLv3](https://www.gnu.org/licenses/gpl-3.0).
 
 Bug in "About" logo by Sidney Vincent from [Noun Project](https://thenounproject.com/browse/icons/term/insect/) (CC BY 3.0)

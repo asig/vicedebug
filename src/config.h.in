@@ -1,0 +1,4 @@
+#pragma once
+
+#define VERSION_MAJOR @vicedebug_VERSION_MAJOR@
+#define VERSION_MINOR @vicedebug_VERSION_MINOR@

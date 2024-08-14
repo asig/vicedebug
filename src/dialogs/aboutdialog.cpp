@@ -26,6 +26,8 @@
 #include <QComboBox>
 #include <QGroupBox>
 
+#include "config.h"
+
 namespace vicedebug {
 
 namespace {
@@ -48,8 +50,8 @@ void AboutDialog::setupUI() {
     logoLabel->setPixmap(logo->pixmap(kLogoW,kLogoH));
     vLayout->addWidget(logoLabel, 0, Qt::AlignHCenter);
 
-    vLayout->addWidget(new QLabel("Version 0.1"), 0, Qt::AlignHCenter);
-    vLayout->addWidget(new QLabel("© 2023 Andreas Signer <asigner@gmail.com>"), 0, Qt::AlignHCenter);
+    vLayout->addWidget(new QLabel(QString::asprintf("Version %d.%d", VERSION_MAJOR, VERSION_MINOR)), 0, Qt::AlignHCenter);
+    vLayout->addWidget(new QLabel("© 2024 Andreas Signer <asigner@gmail.com>"), 0, Qt::AlignHCenter);
     vLayout->addWidget(new QLabel("<a href=\"https://github.com/asig/vicedebug\">https://github.com/asig/vicedebug</a>"), 0, Qt::AlignHCenter);
     auto okBtn = new QPushButton("Ok");
     connect(okBtn, &QPushButton::clicked, this, [this] {

@@ -11,6 +11,15 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+#
+# Prevent building in the source directory
+#
+
+if(PROJECT_SOURCE_DIR STREQUAL PROJECT_BINARY_DIR)
+  message(FATAL_ERROR "In-source builds not allowed. Use `cmake -B build; cd build; make -j$(nproc)` instead.\n")
+endif()
+
+
 find_package(QT
     NAMES Qt6
     REQUIRED COMPONENTS
@@ -27,7 +36,12 @@ find_package(Qt6
         Widgets
 )
 
-include_directories(src)
+configure_file(src/config.h.in config.h)
+
+include_directories(
+    src
+    ${PROJECT_BINARY_DIR} # for config.h
+)
 
 set(PROJECT_SOURCES
         resources/resources.qrc
